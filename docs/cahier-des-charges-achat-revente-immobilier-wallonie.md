@@ -6,7 +6,7 @@
 | Zone | Belgique, Région wallonne — **rayon de 10 km autour de Mons** |
 | Type de bien (v1) | **Maisons** uniquement |
 | Point d'entrée | **Annonce Immoweb** du bien, **importée par l'utilisateur** (pas de collecte automatique, cf. §4.1) |
-| Version | 3.0 (fusion avec le cahier des charges « App d'analyse immobilière (Wallonie) ») |
+| Version | 3.1 (repérage GO / NO-GO, fiche annonce avec photos, estimation détaillée des travaux, collecte automatique horaire) |
 | Date | 07/10/2026 |
 | Statut | Proposition — à valider |
 | Versions produit | **MVP** → **V2** → **V3** (cf. §12) |
@@ -28,7 +28,7 @@ L'activité consiste à acheter des maisons sous-évaluées (souvent à rénover
 Spécificités belges qui pèsent fortement sur le modèle :
 - **Pas de base publique des transactions à l'adresse** (pas d'équivalent du DVF français) : l'estimation repose sur les annonces (Immoweb), les médianes communales Statbel, le baromètre des notaires et les avis de valeur.
 - **Droits d'enregistrement élevés** en Wallonie pour un achat d'investissement (12,5 % par défaut), qui réduisent fortement la marge.
-- **Les annonces Immoweb ne peuvent pas être collectées automatiquement** : l'extraction automatisée est interdite par les conditions d'utilisation du site, le site est protégé contre les robots, et l'environnement d'exécution de l'outil n'y a pas accès (vérifié : requête vers `www.immoweb.be` refusée). Un lien d'annonce seul ne suffit donc pas : c'est l'utilisateur qui importe l'annonce qu'il consulte (cf. §4.1). Une collecte automatique à petite échelle (mode M7) reste une option soumise à décision explicite du porteur de projet.
+- **Collecte des annonces Immoweb** : dans la **version finale**, les annonces sont récoltées **automatiquement toutes les heures** par un script — par API si un accès est obtenu, sinon par lecture des pages publiques (décision du porteur de projet du 07/10/2026, cf. §4.1). Immoweb ne propose pas d'API publique de lecture des annonces et ses conditions d'utilisation interdisent l'extraction automatisée : ce risque est **assumé par le porteur de projet**, et la collecte est conçue pour rester discrète et s'arrêter au premier refus. Les premières versions fonctionnent par import manuel (page enregistrée, texte collé, saisie).
 - **Une offre d'achat écrite acceptée vaut vente** : l'offre doit être émise avec des conditions suspensives et un prix déjà validé par le modèle.
 
 ### 1.2 Objectifs métier
@@ -128,7 +128,7 @@ Plus-value nette = Prix de revente
 ## 4. Processus cible
 
 ```
- 1. Annonce importée par l'utilisateur ──► 1b. Écran de vérification ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
+ 1. Annonce collectée (toutes les heures) ou importée ──► 1b. Repérage GO / NO-GO ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
                                                                                                  │
  8. Compromis → acte (≤ 4 mois) ◄── 7. Offre écrite (conditions suspensives) ◄── 6. GO/NO-GO ◄── 5. Devis travaux
         │
@@ -139,33 +139,74 @@ Plus-value nette = Prix de revente
 
 > **Règle** : l'extraction propose, l'utilisateur valide. Aucune donnée n'entre en base sans passer par l'**écran de vérification** (champs pré-remplis, champs manquants ou douteux mis en évidence, règles de validation : surface > 0, PEB parmi A++ à G, code postal wallon). Les réimports d'annonces déjà suivies (mise à jour du prix) ne demandent une validation que si un champ autre que le prix a changé.
 
-### 4.1 Acquisition des annonces — contrainte structurante
+### 4.1 Acquisition des annonces
 
-L'outil **ne télécharge jamais lui-même** les pages Immoweb. Le lien (URL) d'une annonce sert d'identifiant et permet d'ouvrir l'annonce, mais ses données doivent être **transmises par l'utilisateur** qui la consulte dans son navigateur.
+**Version finale : collecte automatique toutes les heures.** L'utilisateur n'a plus à charger les annonces : un script récolte les nouvelles annonces de maisons de la zone et met à jour les annonces existantes (prix, retrait) **une fois par heure**. Les modes manuels restent disponibles en secours et pour les biens hors annonce.
 
-| Mode d'import | Description | Effort utilisateur | Priorité |
+| Mode | Description | Effort utilisateur | Version |
 |---|---|---|---|
-| **M1 — Page sauvegardée** | L'utilisateur enregistre la page (Ctrl+S, « HTML ») et la dépose dans l'outil ; les données sont extraites de l'objet `window.classified` de la page | ≈ 20 s par annonce | Must |
-| **M2 — Marque-page d'import** (bookmarklet) ou petite extension de navigateur | Sur la page affichée, un clic lit les données de l'annonce et les envoie à l'outil (une annonce à la fois, à l'initiative de l'utilisateur) | 1 clic | Should |
-| **M3 — Copier-coller du texte** (secours universel) | L'utilisateur colle le texte d'une annonce de **n'importe quel site** ; un modèle de langage (API Claude, ou modèle local via Ollama) extrait les champs en JSON, puis l'écran de vérification s'ouvre | ≈ 1 min, quelques centimes par annonce | Must |
-| **M3b — Autres portails** | Extracteurs dédiés **Zimmo** et **Immovlan** (données structurées JSON-LD des pages sauvegardées) | ≈ 20 s | V2 |
-| **M4 — Saisie / import CSV** | Formulaire ou fichier (une ligne par observation datée) | Variable | Must |
-| **M5 — Accord de données** | Flux fourni par Immoweb ou un fournisseur de données immobilières sous contrat ; supprime la contrainte d'import manuel | Aucun | Could (à négocier) |
-| **M6 — Alertes e-mail** | Lecture automatique quotidienne des alertes e-mail Immoweb de l'utilisateur (recherche sauvegardée) pour ajouter les nouvelles annonces | Aucun | V2 |
-| **M7 — Scan / rescan automatique à petite échelle** | Collecte quotidienne des annonces d'un secteur et des annonces suivies (≤ 1 requête toutes les 3 à 5 s, plafond de pages par jour, respect du robots.txt, arrêt au premier blocage, **aucun contournement des protections anti-robots**) | Aucun | **En attente de décision** : contraire aux conditions d'utilisation d'Immoweb ; à n'activer que sur décision explicite du porteur de projet, qui en assume le risque, et sur sa propre machine |
+| **M1 — Page enregistrée** | L'utilisateur enregistre la page (Ctrl+S, « HTML ») et la dépose dans l'outil ; les données sont lues dans l'objet `window.classified` de la page | ≈ 20 s par annonce | V1 (réalisé) |
+| **M3 — Texte collé** (secours universel) | Texte d'une annonce de n'importe quel site ; extraction par l'API Claude (ou expressions régulières), puis écran de vérification | ≈ 1 min | V1 (réalisé) |
+| **M4 — Saisie / import CSV** | Formulaire ou fichier | Variable | V1 (réalisé) |
+| **M3b — Autres portails** | Extracteurs Zimmo et Immovlan | ≈ 20 s | V2 |
+| **M5 — API / accès officiel** (prioritaire) | Accès aux données par une API sous accord : demande à Immoweb (api@immoweb.be ; son API connue sert aux professionnels pour **publier** des annonces, pas à lire celles du marché) ou contrat avec un fournisseur de données immobilières belge. Si un accès est obtenu, il remplace M7 | Aucun | À demander dès la V2 |
+| **M7 — Collecte automatique horaire** (à défaut d'API) | Lecture des pages publiques de résultats et d'annonces Immoweb par un script planifié, selon les règles ci-dessous | Aucun | **Version finale** |
+
+**Fonctionnement de la collecte horaire (M7)**
+
+| ID | Exigence |
+|---|---|
+| C1 | **Planification** : exécution toutes les heures (cron ou planificateur intégré) sur une machine de l'utilisateur ou un serveur (VPS, serveur domestique) ; une exécution ne démarre pas si la précédente n'est pas terminée |
+| C2 | **Recherche** : parcours des pages de résultats d'une recherche « maisons à vendre » sur les codes postaux de la zone, triées par date (les plus récentes d'abord) ; arrêt dès qu'une page ne contient plus que des annonces déjà connues et inchangées |
+| C3 | **Lecture détaillée ciblée** : la page de l'annonce n'est lue que pour une **nouvelle** annonce, un **prix modifié** dans les résultats, ou une annonce non relue depuis 24 h ; le reste est mis à jour à partir des résultats seuls |
+| C4 | **Retraits** : une annonce absente de toutes les collectes complètes pendant 24 h est marquée retirée (date de retrait = dernière observation) ; une collecte interrompue ne marque rien comme retiré |
+| C5 | **Discrétion** : au plus 1 requête toutes les 3 à 5 s, plafond de requêtes par heure (défaut 300), respect du robots.txt, identification honnête du client, **aucun contournement des protections anti-robots** (pas de résolution de captcha, de rotation d'adresses IP ni d'imitation de navigateur) ; arrêt immédiat de l'exécution au premier refus (403, 429, captcha) et nouvel essai à l'heure suivante, avec alerte après 3 échecs consécutifs |
+| C6 | **Journal** : pour chaque exécution, nombre d'annonces vues, nouvelles, modifiées, retirées, erreurs et durée ; visible dans la page « Données » |
+| C7 | **Après chaque collecte** : recalcul du repérage (module R) pour les annonces nouvelles ou modifiées et notification des nouveaux biens « GO » (e-mail ou Telegram, cf. H6) |
+| C8 | **Photos** : seuls les liens des photos sont enregistrés (affichage depuis Immoweb) ; aucune redistribution des photos ni des annonces |
+| C9 | **Robustesse** : extracteur isolé et testé sur des pages réelles enregistrées ; si la structure des pages change, la collecte s'arrête proprement et l'erreur est signalée |
+
+> ⚠️ **Risque assumé** : Immoweb interdit l'extraction automatisée dans ses conditions d'utilisation et protège son site par un service anti-robots. La collecte peut être bloquée à tout moment, et Immoweb peut invoquer ses conditions d'utilisation. Le porteur de projet a décidé d'en assumer le risque pour la version finale ; la démarche d'accès officiel (M5) est menée en parallèle pour le supprimer.
 
 **Conséquences sur l'outil :**
-- **Historique des prix et durée en ligne** : ils n'existent que pour les annonces **revues régulièrement**. L'outil produit une **liste de tournée** (annonces suivies non revues depuis 7 jours, avec leurs liens) que l'utilisateur parcourt chaque semaine en réimportant chaque page (M1/M2) ; une annonce introuvable lors de la tournée est marquée retirée.
-- **Couverture du marché** : la base ne contient que les annonces importées. L'outil affiche pour chaque estimation le **nombre de comparables** et un **taux de couverture** (annonces suivies / annonces maisons de la zone, ce dernier nombre étant relevé manuellement sur Immoweb) ; une couverture faible abaisse l'indice de confiance.
-- **Nouvelles annonces** : repérées via les **alertes e-mail Immoweb** de l'utilisateur, qui ouvre puis importe les annonces intéressantes.
-- **Robustesse** : la structure des pages Immoweb peut changer ; l'extraction est testée sur des pages réelles sauvegardées, et toute erreur d'extraction bascule vers la saisie assistée (M3/M4) au lieu de bloquer.
-- **Données personnelles** : les noms et coordonnées d'agents ou de vendeurs présents dans les pages ne sont pas conservés (RGPD).
-- **Données brutes** : le JSON (ou le texte) d'extraction est conservé, pour pouvoir ré-extraire les champs après une amélioration de l'extracteur sans réimporter l'annonce.
-- **Un extracteur par site**, isolé, testé sur des pages réelles sauvegardées (détecte un extracteur cassé sans accès réseau).
+- **Historique des prix et durée en ligne** : complets et à l'heure près pour toutes les annonces de la zone dès que la collecte horaire tourne ; avant cela, ils ne couvrent que les annonces réimportées.
+- **Couverture du marché** : proche de 100 % des maisons de la zone avec M7 ; avec l'import manuel, l'outil affiche un **taux de couverture** qui abaisse l'indice de confiance s'il est faible.
+- **Données personnelles** : noms et coordonnées d'agents ou de vendeurs non conservés ; téléphones et e-mails retirés des descriptions (RGPD).
+- **Données brutes** : le JSON d'extraction est conservé pour pouvoir ré-extraire les champs sans relire la page.
+- **Écran de vérification** : obligatoire pour les imports manuels ; les annonces collectées automatiquement entrent directement en base et restent signalées « non vérifiées » jusqu'à la consultation de leur fiche.
 
 ---
 
 ## 5. Exigences fonctionnelles
+
+### 5.0 Module R — Repérage : base de données des biens et statut GO / NO-GO (phase 1)
+
+**Objectif de la phase 1** : trouver rapidement, parmi tous les biens récoltés, ceux dont le prix est **sous la valeur du marché**. Le statut de repérage ne regarde que le positionnement du prix ; la rentabilité complète (travaux, frais, revente) est évaluée ensuite dans la fiche du bien (modules C à F).
+
+**Règle de repérage**
+
+```
+Écart = prix/m² demandé (actualisé) du bien / référence − 1
+Référence = médiane (par défaut) ou moyenne du prix/m² actualisé des biens similaires (comparables, B13)
+
+GO     si Écart ≤ −seuil              (seuil par défaut : 20 %, cohérent avec l'achat visé à −20 %)
+NO-GO  si Écart > −seuil
+« Données insuffisantes » si moins de 5 comparables ou surface habitable inconnue
+```
+
+Les comparables sont **ramenés au même état** que le bien (coefficients d'état, B6) pour ne pas comparer une maison à rénover à des maisons rénovées. L'écart au **médian Statbel** de la commune est affiché à côté, à titre de contrôle.
+
+| ID | Exigence | Version |
+|---|---|---|
+| RP1 | Page **« Base de données »** : liste de tous les biens récoltés, avec la colonne **Repérage : GO / NO-GO / Données insuffisantes**, l'écart (%) et la référence utilisée | V1.1 |
+| RP2 | Colonnes : photo miniature, commune, prix, prix/m², surface, terrain, chambres, façades, état, PEB, écart à la référence, écart au médian Statbel, nombre de comparables, baisses de prix, jours en ligne, date de publication, statut en ligne / retirée, décision de rentabilité (si calculée) | V1.1 |
+| RP3 | **Paramètres de repérage modifiables à l'écran** : référence (médiane / moyenne), seuil (%), rayon des comparables, nombre minimal de comparables ; le statut se recalcule immédiatement | V1.1 |
+| RP4 | **Filtres** : statut de repérage, commune, distance à Mons, prix min / max, prix/m² min / max, surface min / max, terrain min / max, chambres, façades, état, classe PEB, année de construction, écart (%), baisse de prix (oui / non), durée en ligne, publiée depuis (24 h, 7 jours, 30 jours), en ligne / retirée, source | V1.1 |
+| RP5 | Tri sur chaque colonne ; filtres mémorisés ; export CSV de la sélection | V1.1 |
+| RP6 | Un clic sur un bien ouvre sa **fiche détaillée** (§5.10) | V1.1 |
+| RP7 | Recalcul automatique du repérage après chaque collecte (C7) et mise en avant des **nouveaux GO** des dernières 24 h | Version finale |
+
+> Le statut de repérage « GO » signifie « à étudier en priorité », pas « à acheter » : la décision d'offre reste celle du module F (règles R1 à R7, plus-value ≥ 30 000 € dans le scénario prudent).
 
 ### 5.1 Module A — Analyse préliminaire à partir de l'annonce Immoweb
 
@@ -333,7 +374,7 @@ avec `Marge_min = 30 000 €`.
 | D13 | **Modèles de régression par poste** (après visite) : coût = coût fixe + quantité × prix unitaire, ajusté selon la gamme et le bâti d'avant 1945 ; ré-estimés après chaque chantier clôturé | Should |
 | D14 | La borne haute (P90) de l'intervalle de prédiction remplace le pourcentage d'imprévus fixe dans le **scénario prudent** dès que le modèle dispose d'au moins 30 chantiers réels | Should |
 
-**Régression linéaire sur les travaux** — implémentation de référence dans [`travaux/`](../travaux/README.md) :
+**Régression linéaire sur les travaux** — implémentation de référence dans [`immo/regression_travaux.py`](../immo/regression_travaux.py) :
 
 ```
 Modèle annonce : Coût = β0 + β1·surface + β2·[À rénover] + β3·[À restaurer] + β4·saut_classes_PEB
@@ -349,6 +390,29 @@ Indicateurs suivis : R², R² ajusté, erreur type et t de chaque coefficient, M
 | ≤ 0 | 0 – 45 | 45 – 85 | 85 – 170 | 170 – 255 | 255 – 340 | 340 – 425 | 425 – 510 | > 510 |
 
 > La réglementation wallonne sur la performance énergétique des logements existants évolue (objectifs de rénovation, éventuelles obligations à l'acquisition) : l'outil doit permettre d'ajouter une règle « obligation de rénovation » paramétrable.
+
+#### 5.4.1 Onglet « Estimation des travaux » (configurable par l'utilisateur)
+
+L'utilisateur compose lui-même le chantier : il **coche les postes de travaux**, ajuste les **quantités** et le **niveau de prix**, et le total alimente directement l'étude de rentabilité. Le pré-chiffrage par ratios (D2, D4) ne sert plus que de point de départ quand aucun poste n'est encore choisi.
+
+| ID | Exigence | Version |
+|---|---|---|
+| D15 | **Catalogue de postes** de travaux (Annexe A) : catégorie, libellé, unité (m², ml, m³, unité, forfait), prix unitaire **bas / moyen / haut HTVA**, taux de TVA applicable, source et date de mise à jour | V1.1 |
+| D16 | **Sélection** des postes par cases à cocher, regroupés par catégorie (démolition, toiture, façade et humidité, menuiseries extérieures, isolation, plafonnage et cloisons, sols, finitions, électricité, plomberie et chauffage, ventilation, sanitaires et cuisine, désamiantage) ; possibilité d'**ajouter un poste libre** (libellé, unité, prix) | V1.1 |
+| D17 | **Quantités proposées** à partir de l'annonce (règles de l'Annexe A, ex. surface des murs et plafonds ≈ 3,5 × surface habitable), toujours modifiables ; les postes à mesurer sur place sont signalés « à mesurer » | V1.1 |
+| D18 | **Niveau de prix** par poste (bas / moyen / haut) ou **prix unitaire saisi** (ex. prix d'un devis) ; un poste dont le prix vient d'un devis est marqué « devis » | V1.1 |
+| D19 | **Calcul** : sous-total par poste et par catégorie, total HTVA, TVA (6 % pour la rénovation d'un logement de plus de 10 ans lorsque les conditions sont remplies, 21 % sinon — **21 % pour les chaudières gaz et mazout depuis le 29/07/2025**), total TVAC, imprévus (%), total général | V1.1 |
+| D20 | **Durée estimée** du chantier (somme indicative par poste, modifiable) reprise dans le portage | V1.1 |
+| D21 | Le **total TVAC** et la durée remplacent automatiquement les hypothèses « travaux » et « durée » du modèle financier ; la plus-value, le prix d'achat maximum et la décision se recalculent immédiatement | V1.1 |
+| D22 | **Modèles de chantier** pré-remplis (rafraîchissement, rénovation moyenne, rénovation lourde, rénovation énergétique) à appliquer puis ajuster ; enregistrement de la configuration propre à chaque bien | V1.1 |
+| D23 | Catalogue **modifiable** dans l'outil (prix, nouveaux postes) ; les prix réels des devis et factures des opérations servent à le recalibrer (G5) | V2 |
+
+#### 5.4.2 Étude des prix (synthèse)
+
+L'Annexe A rassemble les prix unitaires observés en Belgique en 2025-2026 pour chaque poste (fourchettes HTVA, pose comprise sauf mention). Points d'attention :
+- Les sources disponibles sont surtout des **guides de prix de plateformes de mise en relation** (TrustUp, Bobex, guides rénovation) : les fourchettes sont larges et doivent être **recalibrées avec au moins 3 devis locaux** (Mons – Borinage) avant la première opération.
+- Le niveau « moyen » retenu par défaut est le milieu de la fourchette.
+- Les prix du bâti ancien du Borinage (murs épais, humidité, amiante) se situent plutôt dans le haut des fourchettes : les imprévus restent provisionnés à part (D7).
 
 ### 5.5 Module E — Estimation du prix de revente après travaux
 
@@ -404,7 +468,7 @@ Indicateurs suivis : R², R² ajusté, erreur type et t de chaque coefficient, M
 | ID | Exigence | Version |
 |---|---|---|
 | H1 | **Liste des biens** filtrable et triable (commune, prix, prix/m², score, PEB, état, statut actif / retiré / vendu) | MVP |
-| H2 | **Fiche du bien** : prix, prix/m², écart au médian communal, comparables, risques, historique des prix, mini-carte, prix d'achat maximum | MVP |
+| H2 | **Fiche du bien** : prix, prix/m², écart au médian communal, comparables, risques, historique des prix, mini-carte, prix d'achat maximum (détail : §5.10) | MVP |
 | H3 | **Écran « Données »** : import des fichiers Statbel, date de dernière mise à jour de chaque source | MVP |
 | H4 | **Vue secteur** (commune ou rayon) : nuage prix / surface avec droite de régression, distribution du prix/m², carte des biens colorés par score | V2 |
 | H5 | **Comparateur** de 2 à 4 biens côte à côte, écarts mis en évidence | V2 |
@@ -412,6 +476,17 @@ Indicateurs suivis : R², R² ajusté, erreur type et t de chaque coefficient, M
 | H7 | **Notes et photos de visite** rattachées au bien (en complément de la checklist D1) | V3 |
 | H8 | **Points d'intérêt** : commerces, écoles, arrêts (OpenStreetMap / Overpass) et temps de trajet en train vers Mons, Bruxelles, etc. (iRail) | V3 |
 | H9 | Export PDF ou HTML d'une fiche | V3 |
+
+### 5.10 Fiche détaillée du bien (accès depuis la base de données)
+
+| Onglet | Contenu | Version |
+|---|---|---|
+| **Annonce** | **Toutes les informations de l'annonce** : titre, adresse, prix et historique, caractéristiques (surfaces habitable, terrain, jardin, terrasse ; chambres, salles d'eau, façades, étages, cave, grenier), état, année, PEB (classe, kWh/m², n° de certificat), chauffage, cuisine, revenu cadastral, vendeur (agence / particulier), date de publication, vues et favoris, description complète, lien vers l'annonce d'origine ; **galerie de photos** de l'annonce (affichées depuis Immoweb) ; champs manquants à demander à l'agence | V1.1 |
+| **Repérage et prix** | Statut GO / NO-GO, écart à la médiane / moyenne des comparables, écart au médian Statbel, comparables (tableau, graphiques, carte), valeur en l'état et après travaux | V1 (réalisé) + V1.1 |
+| **Estimation des travaux** | Composition du chantier poste par poste (§5.4.1) | V1.1 |
+| **Rentabilité** | Hypothèses, bilan en 3 scénarios, prix d'achat maximum, décision R1 à R7 | V1 (réalisé) |
+| **Risques** | Vérification WalOnMap et risques saisis | V1 (réalisé) |
+| **Historique** | Évolution du prix, durée en ligne, analyses enregistrées | V1 (réalisé) |
 
 ---
 
@@ -462,6 +537,9 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | Géocodage imprécis (adresse masquée) | Indicateur « position approximative » | Repli sur le centre de la commune, signalé |
 | Fichiers Statbel qui changent de format | Contrôle des colonnes à l'import | Script d'import isolé |
 | Projet trop ambitieux, abandonné en route | Jalons | MVP volontairement petit, livrable en quelques semaines |
+| Collecte horaire bloquée par Immoweb (probabilité élevée) | Journal des collectes, alerte après 3 échecs | Arrêt propre, reprise à l'heure suivante ; import manuel en secours ; démarche d'accès officiel (M5) |
+| Recours d'Immoweb lié à ses conditions d'utilisation | — | Usage strictement personnel, volume faible, aucune redistribution ; accès officiel recherché |
+| Prix des travaux sous-estimés (sources génériques) | Écart estimé / devis / facturé (G2) | Recalibrage du catalogue avec des devis locaux ; imprévus provisionnés |
 | Hausse des taux, allongement des délais | Sensibilité F9 | Durée d'opération courte |
 
 ---
@@ -504,6 +582,10 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | `indices_prix` | Indice d'évolution des prix par zone et trimestre |
 | `estimation` | Prix estimés, intervalle, résidu, score, **version du modèle** |
 | `operation` | Modèle financier, scénarios, décision, suivi de chantier (modules C à G) |
+| `photos` | Liens des photos de chaque annonce, dans l'ordre de l'annonce |
+| `catalogue_travaux` | Postes de travaux : catégorie, libellé, unité, prix bas / moyen / haut HTVA, TVA, règle de quantité, source, date |
+| `travaux_bien` | Configuration du chantier d'un bien : postes cochés, quantité, niveau ou prix saisi, origine (catalogue / devis) |
+| `collectes` | Journal des collectes horaires (début, fin, annonces vues / nouvelles / modifiées / retirées, erreurs) |
 | `secteur_suivi` (V2), `visite` (V3) | Secteurs à surveiller ; notes et photos de visite |
 
 Unités : prix en euros entiers, surfaces en m², dates ISO (AAAA-MM-JJ).
@@ -609,8 +691,10 @@ On ne passe à la version suivante qu'une fois son jalon atteint.
 |---|---|---|---|
 | Phase 0 | Cadrage, validation du cahier des charges et des paramètres fiscaux avec un notaire | Cahier des charges validé | 2 semaines |
 | **MVP** | Projet `uv`, base SQLite ; codes NIS et médians Statbel ; saisie manuelle et liste des biens ; fiche avec écart au médian communal (**jalon 1**) ; extracteur Immoweb + écran de vérification ; secours par texte collé ; géocodage et couches WalOnMap ; prix/m² vs comparables ; travaux par régression / ratios ; modèle financier, prix maximum et Go/No-Go ; **20 vrais biens saisis** (**jalon 2**) | Jalons 1 et 2 | 6 à 8 semaines |
-| **V2** | Extracteurs Zimmo / Immovlan ; alertes e-mail (M6) ; suivi des annonces et historique des prix ; modèle hédonique, score ; vue secteur ; comparateur ; scénarios et sensibilité ; simulation PEB ; exports PDF ; décision sur M7 | **Jalon 3** : 30 maisons dans le secteur, erreur du modèle < 15 % | 6 semaines |
+| **V1.1** | Page « Base de données » avec repérage GO / NO-GO et filtres (module R) ; fiche détaillée avec toutes les informations de l'annonce et les photos ; onglet « Estimation des travaux » configurable avec le catalogue de l'Annexe A ; photos enregistrées à l'import | Le repérage fait ressortir les biens sous la valeur du marché ; un chantier composé poste par poste alimente la rentabilité | 3 à 4 semaines |
+| **V2** | Extracteurs Zimmo / Immovlan ; demande d'accès officiel aux données (M5) ; alertes e-mail (M6) ; suivi des annonces et historique des prix ; modèle hédonique, score ; vue secteur ; comparateur ; scénarios et sensibilité ; simulation PEB ; exports PDF ; décision sur M7 (prise : collecte horaire en version finale) | **Jalon 3** : 30 maisons dans le secteur, erreur du modèle < 15 % | 6 semaines |
 | **V3** | Points d'intérêt et trajets ; notes et photos de visite ; notifications ; suivi d'opération complet (G) ; mode hors-ligne ; Docker | Outil utilisé pour une vraie décision | 6 semaines |
+| **Version finale** | **Collecte automatique toutes les heures** (API si obtenue, sinon M7) sur un serveur ; journal des collectes ; recalcul du repérage et notification des nouveaux GO | Collecte horaire stable pendant 2 semaines, nouvelles annonces visibles en moins d'une heure | 3 semaines |
 | Continu | Accord de données (M5), base interne de prix réels, recalibrage, extension aux appartements et à toute la Wallonie | — | — |
 
 > Alternative rapide : une **version tableur** (Excel / Google Sheets) de la fiche d'analyse préliminaire et du modèle financier (§1.3, §5.3, §5.7, §9) peut être livrée en 1 semaine pour tester la méthode sur les annonces actuelles autour de Mons.
@@ -638,6 +722,75 @@ On ne passe à la version suivante qu'une fois son jalon atteint.
 - au moins 30 maisons sont suivies dans le secteur ;
 - l'erreur moyenne du modèle hédonique est inférieure à 15 % en validation croisée ;
 - une baisse de prix sur une annonce suivie est détectée sans intervention.
+
+**V1.1 réussie si :**
+- la page « Base de données » affiche pour chaque bien le statut GO / NO-GO et l'écart à la référence, et le statut change quand on modifie le seuil ou la référence ;
+- chaque filtre de RP4 réduit correctement la liste ;
+- la fiche d'une annonce Immoweb importée affiche toutes ses informations et ses photos ;
+- un chantier composé de 5 postes (ex. toiture, plafonnage, chape, carrelage, châssis) donne un total HTVA / TVAC recalculé à chaque modification, repris dans la rentabilité.
+
+**Version finale réussie si :**
+- la collecte tourne toutes les heures sans intervention pendant 2 semaines, en respectant le plafond de requêtes ;
+- une nouvelle annonce de la zone apparaît dans la base en moins d'une heure, avec son statut de repérage ;
+- un retrait d'annonce est détecté en moins de 24 h ;
+- un blocage par le site arrête proprement la collecte et déclenche une alerte.
+
+---
+
+## Annexe A — Catalogue des prix des travaux (Belgique, 2025-2026)
+
+Prix unitaires **HTVA, pose comprise** sauf mention, relevés dans des guides de prix belges en 2025-2026 (sources en fin d'annexe). Fourchettes indicatives, à recalibrer avec des devis locaux. Colonne « Quantité proposée » : règle utilisée pour pré-remplir la quantité à partir de l'annonce (SH = surface habitable), toujours modifiable.
+
+| Catégorie | Poste | Unité | Bas | Haut | TVA | Quantité proposée |
+|---|---|---|---:|---:|---|---|
+| Démolition | Vidage / débarras | m³ | 35 | 70 | 6 % | à mesurer |
+| Démolition | Évacuation des gravats | m³ | 20 | 45 | 6 % | à mesurer |
+| Démolition | Location de conteneur | unité | 200 | 800 | 21 % | 1 par tranche de 50 m² rénovés |
+| Désamiantage | Diagnostic amiante | forfait | 150 | 600 | 21 % | 1 si construit avant 2001 |
+| Désamiantage | Retrait toiture fibrociment, évacuation comprise | m² | 25 | 65 | 6 % | à mesurer |
+| Toiture | Toiture inclinée complète (tuiles, sous-toiture, isolation) | m² de toit | 150 | 250 | 6 % | SH / nombre d'étages × 1,3 |
+| Toiture | Isolation de toiture par l'intérieur | m² de toit | 20 | 60 | 6 % | SH / nombre d'étages × 1,3 |
+| Toiture | Toiture plate EPDM | m² | 55 | 90 | 6 % | à mesurer |
+| Toiture | Gouttières (zinc ou PVC) | ml | 30 | 80 | 6 % | à mesurer |
+| Façade et humidité | Rejointoyage de façade | m² | 40 | 60 | 6 % | à mesurer |
+| Façade et humidité | Crépi de façade | m² | 35 | 120 | 6 % | à mesurer |
+| Façade et humidité | Isolation de façade par l'extérieur (crépi sur isolant) | m² | 100 | 250 | 6 % | à mesurer |
+| Façade et humidité | Injection contre l'humidité ascensionnelle | ml de mur | 40 | 150 | 6 % | à mesurer |
+| Façade et humidité | Enduit de rénovation après assèchement | m² | 25 | 45 | 6 % | à mesurer |
+| Menuiseries extérieures | Châssis PVC double vitrage posés | m² de baie | 300 | 700 | 6 % | 0,15 × SH |
+| Menuiseries extérieures | Remplacement d'une fenêtre | unité | 400 | 1 300 | 6 % | SH / 12 |
+| Isolation | Isolation du sol | m² | 20 | 60 | 6 % | SH du rez-de-chaussée |
+| Plafonnage et cloisons | Plafonnage traditionnel murs et plafonds (rénovation) | m² | 15 | 45 | 6 % | 3,5 × SH |
+| Plafonnage et cloisons | Gyproc (doublage, plafond) | m² | 25 | 60 | 6 % | à mesurer |
+| Plafonnage et cloisons | Cloison en gyproc sur ossature (isolée : +15 €) | m² | 30 | 70 | 6 % | à mesurer |
+| Plafonnage et cloisons | Faux plafond | m² | 45 | 120 | 6 % | à mesurer |
+| Sols | Chape traditionnelle | m² | 25 | 45 | 6 % | SH |
+| Sols | Chape liquide | m² | 35 | 60 | 6 % | SH |
+| Sols | Ragréage | m² | 8 | 15 | 6 % | SH |
+| Sols | Carrelage grès cérame, fourni et posé | m² | 40 | 70 | 6 % | 0,4 × SH |
+| Sols | Pose de carrelage seule (hors fourniture) | m² | 25 | 75 | 6 % | 0,4 × SH |
+| Sols | Stratifié fourni et posé | m² | 30 | 60 | 6 % | 0,6 × SH |
+| Sols | Parquet contrecollé fourni et posé | m² | 50 | 90 | 6 % | 0,6 × SH |
+| Finitions | Peinture murs et plafonds (préparation + 2 couches) | m² | 15 | 45 | 6 % | 3,5 × SH |
+| Finitions | Porte intérieure posée | unité | 150 | 600 | 6 % | SH / 15 |
+| Électricité | Rénovation électrique complète (mise aux normes RGIE) | m² SH | 80 | 150 | 6 % | SH |
+| Électricité | Mise en conformité RGIE ponctuelle | forfait | 1 500 | 5 000 | 6 % | 1 |
+| Plomberie et chauffage | Remplacement des conduites | forfait | 1 500 | 4 000 | 6 % | 1 |
+| Plomberie et chauffage | Chaudière gaz à condensation (avec eau chaude) | unité | 3 000 | 6 000 | **21 %** | 1 |
+| Plomberie et chauffage | Pompe à chaleur air-eau | unité | 8 000 | 15 000 | 6 % | 1 |
+| Ventilation | VMC simple flux hygroréglable | unité | 800 | 1 600 | 6 % | 1 |
+| Ventilation | VMC double flux | unité | 2 300 | 4 600 | 6 % | 1 |
+| Sanitaires et cuisine | Salle de bain complète (5 à 10 m²) | forfait | 5 000 | 20 000 | 6 % | 1 par salle d'eau |
+| Sanitaires et cuisine | Cuisine équipée posée (entrée de gamme : 3 000 – 5 000) | forfait | 5 000 | 20 000 | 6 % | 1 |
+
+**Repères globaux** (contrôle de cohérence du total) : rafraîchissement 300 – 800 €/m² HTVA ; rénovation moyenne avec cuisine, salle de bain et plomberie 800 – 1 500 €/m² ; rénovation lourde avec isolation, toiture et mise en conformité 1 500 – 2 500 €/m².
+
+**TVA** : 6 % pour la rénovation d'un logement privé de plus de 10 ans facturée par l'entrepreneur (conditions à vérifier), 21 % pour les matériaux achetés soi-même, la location de matériel et, depuis le 29/07/2025, l'installation de chaudières gaz et mazout. Aucune prime régionale n'est prévue en 2026 pour les chaudières gaz ; les primes (non comptées par défaut, §6) concernent surtout l'isolation et les pompes à chaleur.
+
+**Sources** (consultées le 07/10/2026) :
+- TrustUp, guides de prix : [rénovation de maison](https://blog.trustup.be/fr/prix-renovation-maison/), [plafonnage ou gyproc](https://blog.trustup.be/fr/plafonnage-ou-gyproc-comparatif/), [faux plafond](https://blog.trustup.be/fr/prix-faux-plafond/), [pose de carrelage](https://blog.trustup.be/fr/quel-type-de-pose-de-carrelage-choisir/), [revêtements de sol](https://blog.trustup.be/fr/type-revetement-sol-guide/), [châssis PVC](https://blog.trustup.be/fr/?p=15954), [fenêtres](https://blog.trustup.be/fr/prix-changer-fenetres/), [installation électrique](https://blog.trustup.be/fr/?p=16140), [chaudière à condensation](https://blog.trustup.be/fr/prix-chaudiere-a-condensation/), [salle de bain](https://blog.trustup.be/fr/?p=9823), [peinture](https://blog.trustup.be/fr/?p=2833), [humidité](https://blog.trustup.be/fr/traiter-humidite-habitation/), [isolation de façade](https://blog.trustup.be/fr/prix-isolation-facade/), [crépi](https://blog.trustup.be/fr/prix-crepi-de-facade/), [désamiantage](https://blog.trustup.be/fr/prix-desamiantage/), [gouttières zinc](https://blog.trustup.be/fr/prix-gouttiere-zinc/), [toit plat](https://blog.trustup.be/fr/?p=15855), [cloisons](https://blog.trustup.be/fr/?p=7166), [gyproc](https://blog.trustup.be/fr/prix-pose-placo/), [porte intérieure](https://blog.trustup.be/fr/?p=15995), [isolation des sols](https://blog.trustup.be/fr/prix-isolation-sols/), [VMC](https://blog.trustup.be/fr/?p=17345)
+- Bobex : [rénovation de toiture](https://www.bobex.be/fr-be/travaux-de-toiture/prix-renovation-toiture/), [châssis au m²](https://www.bobex.be/fr-be/chassis-portes-et-fenetres/prix-chassis-au-m2/), [rejointoyage](https://www.bobex.be/fr-be/travaux-renovation-de-facades/rejointoyage-facade/), [cuisine](https://www.bobex.be/fr-be/renovation-cuisine/prix-cuisine/), [VMC](https://www.bobex.be/fr-be/systeme-de-ventilation/vmc/prix/), [désamiantage](https://www.bobex.be/fr-be/enlevement-de-lamiante/prix-desamiantage/), [plafonnage](https://www.bobex.be/travaux-plafonnage/contenu-100004)
+- [Prix rénovation toiture Belgique 2026](https://prix-renovation-toiture.be/guides/prix-renovation-toiture-belgique/), [Guide rénovation — isolation](https://www.guide-renovation.be/isolation/prix-isolation), [Économie énergie — isolation du toit](https://www.economie-energie.be/isolation/isolation-du-toit/), [Batibouw+ — chape](https://www.batibouwplus.be/fr/prix-m2-chape-belgique-devis)
 
 ---
 
