@@ -72,5 +72,49 @@ class TestBaseAnnonces(unittest.TestCase):
         self.assertEqual(d["type_bien"], "maison")
 
 
+class TestPageImmowebReelle(unittest.TestCase):
+    """Page réelle sauvegardée (annonce 21894138, Mons, octobre 2026)."""
+
+    def setUp(self):
+        html = (Path(__file__).parent / "fixtures" / "immoweb_21894138.html").read_text(encoding="utf-8")
+        self.d = ba.extraire_page_immoweb(html)
+
+    def test_champs_extraits(self):
+        d = self.d
+        self.assertEqual(d["immoweb_id"], "21894138")
+        self.assertEqual(d["prix"], 225000)
+        self.assertEqual((d["type_bien"], d["commune"], d["code_postal"]), ("maison", "Mons", "7000"))
+        self.assertEqual((d["rue"], d["numero"]), ("Rue Fernand Maréchal", "17"))
+        self.assertEqual((d["chambres"], d["facades"], d["nb_etages"]), (3, 2, 2))
+        self.assertEqual((d["etat"], d["peb_lettre"], d["peb_kwh_m2"]), ("À rafraîchir", "F", 449))
+        self.assertEqual((d["chauffage"], d["cuisine"], d["revenu_cadastral"]), ("Gaz", "Pas équipée", 745))
+        self.assertEqual((d["surface_jardin"], d["surface_terrasse"]), (100, 20))
+        self.assertEqual(d["vendeur_type"], "agence")
+        self.assertEqual(d["date_publication"], "2026-10-06")
+
+    def test_valeurs_non_communiquees(self):
+        self.assertIsNone(self.d["surface_habitable"])   # absente de l'annonce
+        self.assertIsNone(self.d["surface_terrain"])     # 0 dans la page = non communiqué
+        self.assertIsNone(self.d["annee_construction"])
+
+    def test_description_anonymisee(self):
+        self.assertNotIn("0495", self.d["description"])
+        self.assertIn("[téléphone]", self.d["description"])
+
+    def test_import_et_champs_manquants(self):
+        con = ba.connecter(":memory:")
+        try:
+            html = Path(__file__).parent / "fixtures" / "immoweb_21894138.html"
+            ident = ba.importer_page(con, html, "2026-10-07")
+            manquants = ba.champs_manquants(con, ident)
+            self.assertIn("surface habitable (m²)", manquants)
+            ba.completer(con, ident, surface_habitable="125")
+            df = ba.tableau_annonces(con, "2026-10-07").set_index("immoweb_id")
+            self.assertAlmostEqual(df.loc[ident].prix_m2, 1800)
+            self.assertLess(df.loc[ident].distance_mons_km, 2)
+        finally:
+            con.close()
+
+
 if __name__ == "__main__":
     unittest.main()

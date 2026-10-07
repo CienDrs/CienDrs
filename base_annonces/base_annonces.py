@@ -44,10 +44,20 @@ CHAMPS_ANNONCE = [
     "url", "type_bien", "rue", "numero", "code_postal", "commune", "latitude", "longitude",
     "adresse_precise", "surface_habitable", "surface_terrain", "chambres", "salles_de_bain",
     "facades", "annee_construction", "etat", "peb_lettre", "peb_kwh_m2", "description",
-    "date_publication",
+    "date_publication", "titre", "province", "adresse_approximative", "revenu_cadastral", "peb_reference",
+    "chauffage", "cuisine", "surface_jardin", "surface_terrasse", "nb_etages", "cave", "grenier",
+    "vendeur_type", "prix_ancien_immoweb", "nb_vues", "nb_favoris",
 ]
-NUMERIQUES = {"latitude", "longitude", "surface_habitable", "surface_terrain", "peb_kwh_m2"}
-ENTIERS = {"chambres", "salles_de_bain", "facades", "annee_construction", "adresse_precise"}
+NUMERIQUES = {"latitude", "longitude", "surface_habitable", "surface_terrain", "peb_kwh_m2", "revenu_cadastral",
+              "surface_jardin", "surface_terrasse", "prix_ancien_immoweb"}
+ENTIERS = {"chambres", "salles_de_bain", "facades", "annee_construction", "adresse_precise",
+           "adresse_approximative", "nb_etages", "cave", "grenier", "nb_vues", "nb_favoris"}
+# Champs indispensables à l'estimation : à demander à l'agence s'ils manquent (exigence A3)
+CHAMPS_ESSENTIELS = {
+    "surface_habitable": "surface habitable (m²)", "surface_terrain": "surface du terrain (m²)",
+    "annee_construction": "année de construction", "peb_lettre": "classe PEB", "peb_kwh_m2": "consommation PEB",
+    "revenu_cadastral": "revenu cadastral", "etat": "état du bâtiment", "chambres": "nombre de chambres",
+}
 
 
 # ------------------------------------------------------------------- connexion
@@ -57,6 +67,14 @@ def connecter(chemin=BASE_PAR_DEFAUT) -> sqlite3.Connection:
     con = sqlite3.connect(chemin)
     con.execute("PRAGMA foreign_keys = ON")
     con.executescript((ICI / "schema.sql").read_text(encoding="utf-8"))
+    # migration : ajoute les colonnes apparues après la création d'une base existante
+    existantes = {r[1] for r in con.execute("PRAGMA table_info(annonces)")}
+    for c in CHAMPS_ANNONCE:
+        if c not in existantes:
+            type_sql = "REAL" if c in NUMERIQUES else "INTEGER" if c in ENTIERS else "TEXT"
+            con.execute(f"ALTER TABLE annonces ADD COLUMN {c} {type_sql}")
+    if "derniere_maj_detail" not in existantes:
+        con.execute("ALTER TABLE annonces ADD COLUMN derniere_maj_detail TEXT")
     return con
 
 
@@ -161,46 +179,114 @@ ETATS_IMMOWEB = {
     "AS_NEW": "Comme neuf", "JUST_RENOVATED": "Fraîchement rénové", "GOOD": "Bon",
     "TO_BE_DONE_UP": "À rafraîchir", "TO_RENOVATE": "À rénover", "TO_RESTORE": "À restaurer",
 }
+CHAUFFAGES = {"GAS": "Gaz", "FUELOIL": "Mazout", "ELECTRIC": "Électrique", "PELLET": "Pellets",
+              "WOOD": "Bois", "SOLAR": "Solaire", "CARBON": "Charbon"}
+CUISINES = {"NOT_INSTALLED": "Pas équipée", "USA_UNINSTALLED": "Américaine non équipée",
+            "SEMI_EQUIPPED": "Semi-équipée", "USA_SEMI_EQUIPPED": "Américaine semi-équipée",
+            "INSTALLED": "Équipée", "USA_INSTALLED": "Américaine équipée",
+            "HYPER_EQUIPPED": "Hyper-équipée", "USA_HYPER_EQUIPPED": "Américaine hyper-équipée"}
+RE_TELEPHONE = re.compile(r"(?:\+32|0032|0)\s?\d{2,3}(?:[\s./-]?\d{2,3}){2,3}")
+RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
+RE_SURFACE_HABITABLE = re.compile(r"(\d{2,3})\s?m(?:²|2)\s+(?:habitables?|de surface habitable)", re.I)
+
+
+def anonymiser(texte):
+    """Retire téléphones et adresses e-mail d'un texte d'annonce (RGPD)."""
+    if not texte:
+        return texte
+    return RE_EMAIL.sub("[e-mail]", RE_TELEPHONE.sub("[téléphone]", texte))
+
+
+def _positif(v):
+    """Immoweb renvoie 0 pour une valeur non communiquée (ex. surface du terrain)."""
+    return v if isinstance(v, (int, float)) and v > 0 else None
+
+
+def _booleen(v):
+    return None if v is None else int(bool(v))
 
 
 def extraire_page_immoweb(html: str) -> dict:
     """Extrait les données d'une page d'annonce Immoweb sauvegardée (objet JS `window.classified`).
 
-    La structure de la page peut évoluer : vérifier l'extraction sur une page réelle et
-    adapter les chemins ci-dessous si nécessaire.
+    Structure validée sur une page réelle (octobre 2026). Elle peut évoluer : en cas d'erreur,
+    utiliser la saisie / l'import CSV et mettre à jour les chemins ci-dessous.
     """
     m = re.search(r"window\.classified\s*=\s*", html)
     if not m:
         raise ValueError("Objet `window.classified` introuvable dans la page")
     data, _ = json.JSONDecoder().raw_decode(html[m.end():])
-    prop, loc = data.get("property") or {}, _chemin(data, "property", "location") or {}
+    prop = data.get("property") or {}
+    loc, bat = prop.get("location") or {}, prop.get("building") or {}
     certif = _chemin(data, "transaction", "certificates") or {}
+    vente = _chemin(data, "transaction", "sale") or {}
     creation = _chemin(data, "publication", "creationDate")
+    description = prop.get("description") or data.get("description")
+    surface = _positif(prop.get("netHabitableSurface"))
+    if surface is None and description:
+        trouve = RE_SURFACE_HABITABLE.search(description)
+        surface = float(trouve.group(1)) if trouve else None
+    type_client = ((data.get("customers") or [{}])[0] or {}).get("type")
+    vendeur = {"AGENCY": "agence", "PROMOTER": "promoteur", "NOTARY": "notaire"}.get(
+        type_client, "particulier" if type_client else None)
     return {
         "immoweb_id": str(data.get("id")),
-        "prix": _chemin(data, "price", "mainValue") or _chemin(data, "transaction", "sale", "price"),
+        "prix": _chemin(data, "price", "mainValue") or vente.get("price"),
         "url": f"https://www.immoweb.be/fr/annonce/{data.get('id')}",
-        "type_bien": (prop.get("type") or "").lower().replace("house", "maison") or None,
+        "type_bien": {"HOUSE": "maison", "APARTMENT": "appartement"}.get(prop.get("type"), (prop.get("type") or "").lower() or None),
+        "titre": prop.get("title"),
         "rue": loc.get("street"), "numero": loc.get("number"),
-        "code_postal": loc.get("postalCode"), "commune": loc.get("locality"),
+        "code_postal": loc.get("postalCode"), "commune": loc.get("locality"), "province": loc.get("province"),
         "latitude": loc.get("latitude"), "longitude": loc.get("longitude"),
         "adresse_precise": int(bool(loc.get("street") and loc.get("number"))),
-        "surface_habitable": prop.get("netHabitableSurface"),
-        "surface_terrain": _chemin(prop, "land", "surface"),
-        "chambres": prop.get("bedroomCount"), "salles_de_bain": prop.get("bathroomCount"),
-        "facades": _chemin(prop, "building", "facadeCount"),
-        "annee_construction": _chemin(prop, "building", "constructionYear"),
-        "etat": ETATS_IMMOWEB.get(_chemin(prop, "building", "condition"), _chemin(prop, "building", "condition")),
+        "adresse_approximative": _booleen(loc.get("approximated")),
+        "surface_habitable": surface,
+        "surface_terrain": _positif(_chemin(prop, "land", "surface")),
+        "surface_jardin": _positif(prop.get("gardenSurface")),
+        "surface_terrasse": _positif(prop.get("terraceSurface")),
+        "chambres": prop.get("bedroomCount"),
+        "salles_de_bain": (prop.get("bathroomCount") or 0) + (prop.get("showerRoomCount") or 0) or None,
+        "facades": bat.get("facadeCount"), "nb_etages": bat.get("floorCount"),
+        "annee_construction": bat.get("constructionYear"),
+        "etat": ETATS_IMMOWEB.get(bat.get("condition"), bat.get("condition")),
+        "cave": _booleen(prop.get("hasBasement")), "grenier": _booleen(prop.get("hasAttic")),
+        "chauffage": CHAUFFAGES.get(_chemin(prop, "energy", "heatingType"), _chemin(prop, "energy", "heatingType")),
+        "cuisine": CUISINES.get(_chemin(prop, "kitchen", "type"), _chemin(prop, "kitchen", "type")),
         "peb_lettre": certif.get("epcScore"),
         "peb_kwh_m2": certif.get("primaryEnergyConsumptionPerSqm"),
-        "description": prop.get("description") or data.get("description"),
+        "peb_reference": certif.get("epcReference"),
+        "revenu_cadastral": vente.get("cadastralIncome"),
+        "prix_ancien_immoweb": _chemin(data, "price", "oldValue") or vente.get("oldPrice"),
+        "vendeur_type": vendeur,
+        "nb_vues": _chemin(data, "statistics", "viewCount"),
+        "nb_favoris": _chemin(data, "statistics", "bookmarkCount"),
+        "description": anonymiser(description),
         "date_publication": creation[:10] if creation else None,
     }
 
 
+def champs_manquants(con, immoweb_id):
+    ligne = con.execute(f"SELECT {', '.join(CHAMPS_ESSENTIELS)} FROM annonces WHERE immoweb_id = ?",
+                        (str(immoweb_id),)).fetchone()
+    return [lib for (champ, lib), v in zip(CHAMPS_ESSENTIELS.items(), ligne) if v is None]
+
+
+def completer(con, immoweb_id, **champs):
+    """Complète manuellement des champs (ex. surface obtenue auprès de l'agence)."""
+    champs = {k: _nettoyer(k, v) for k, v in champs.items() if k in CHAMPS_ANNONCE}
+    if champs.get("latitude") is not None and champs.get("longitude") is not None:
+        champs["distance_mons_km"] = round(distance_km(champs["latitude"], champs["longitude"], *GRAND_PLACE_MONS), 2)
+    if champs:
+        con.execute(f"UPDATE annonces SET {', '.join(f'{k} = ?' for k in champs)} WHERE immoweb_id = ?",
+                    [*champs.values(), str(immoweb_id)])
+        con.commit()
+
+
 def importer_page(con, chemin, date_observation=None):
     champs = extraire_page_immoweb(Path(chemin).read_text(encoding="utf-8"))
-    enregistrer_observation(con, champs.pop("immoweb_id"), champs.pop("prix"), date_observation, **champs)
+    ident = champs.pop("immoweb_id")
+    enregistrer_observation(con, ident, champs.pop("prix"), date_observation, **champs)
+    return ident
 
 
 # ---------------------------------------------------------------- statut en ligne
@@ -238,6 +324,9 @@ def tableau_annonces(con, aujourd_hui=None, zone_indice=ZONE_INDICE) -> pd.DataF
                              for d, p in zip(g.date_observation, g.prix)), include_groups=False)
     df = ann.merge(agg, left_on="immoweb_id", right_index=True, how="left")
 
+    df["baisse_signalee_immoweb"] = df["prix_ancien_immoweb"].notna() & (df["prix_ancien_immoweb"] > df["prix_actuel"])
+    df["prix_initial"] = df[["prix_initial", "prix_ancien_immoweb"]].max(axis=1)
+    df["nb_baisses_prix"] = df["nb_baisses_prix"].where(~(df["baisse_signalee_immoweb"] & (df["nb_baisses_prix"] == 0)), 1)
     df["en_ligne"] = df["date_retrait"].isna()
     debut = df["date_publication"].fillna(df["premiere_observation"])
     fin = df["date_retrait"].fillna(today)
@@ -383,6 +472,36 @@ def afficher_situation(res):
         print(f"Part des comparables ayant baissé leur prix : {res['part_comparables_en_baisse_pct']:.0f} %")
 
 
+def afficher_fiche(con, immoweb_id, aujourd_hui=None):
+    df = tableau_annonces(con, aujourd_hui)
+    b = df[df["immoweb_id"] == str(immoweb_id)].iloc[0]
+    lignes = [
+        ("Titre", b.titre), ("Adresse", f"{b.rue or ''} {b.numero or ''}, {b.code_postal or ''} {b.commune or ''}"),
+        ("Distance à Mons", f"{fmt(b.distance_mons_km, 1)} km" + (" ✅" if pd.notna(b.distance_mons_km)
+                                                                  and b.distance_mons_km <= RAYON_ZONE_KM else " ❌")),
+        ("Prix demandé", f"{fmt(b.prix_actuel)} €"), ("Prix/m²", f"{fmt(b.prix_m2)} €"),
+        ("Surface habitable", f"{fmt(b.surface_habitable)} m²"), ("Terrain", f"{fmt(b.surface_terrain)} m²"),
+        ("Jardin / terrasse", f"{fmt(b.surface_jardin)} m² / {fmt(b.surface_terrasse)} m²"),
+        ("Chambres / salles d'eau", f"{fmt(b.chambres)} / {fmt(b.salles_de_bain)}"),
+        ("Façades / étages", f"{fmt(b.facades)} / {fmt(b.nb_etages)}"),
+        ("Année de construction", fmt(b.annee_construction)), ("État", b.etat),
+        ("PEB", f"{b.peb_lettre} — {fmt(b.peb_kwh_m2)} kWh/m²/an (certificat {b.peb_reference})"),
+        ("Chauffage / cuisine", f"{b.chauffage} / {b.cuisine}"),
+        ("Revenu cadastral", f"{fmt(b.revenu_cadastral)} €"), ("Vendeur", b.vendeur_type),
+        ("Publication", f"{b.date_publication} — {fmt(b.jours_en_ligne)} jours en ligne"),
+        ("Historique des prix", b.historique_prix),
+        ("Baisse signalée par Immoweb", f"oui (ancien prix {fmt(b.prix_ancien_immoweb)} €)"
+         if b.baisse_signalee_immoweb else "non"),
+        ("Vues / favoris", f"{fmt(b.nb_vues)} / {fmt(b.nb_favoris)}"),
+    ]
+    for k, v in lignes:
+        print(f"{k:<28} {'—' if v is None or (isinstance(v, float) and math.isnan(v)) else v}")
+    manquants = champs_manquants(con, immoweb_id)
+    if manquants:
+        print(f"\n⚠️  À demander à l'agence : {', '.join(manquants)}")
+        print(f"   puis : python base_annonces.py completer {immoweb_id} surface_habitable=… annee_construction=…")
+
+
 # ------------------------------------------------------------------------- CLI
 
 def main():
@@ -393,6 +512,9 @@ def main():
     sp.add_parser("init")
     s = sp.add_parser("importer-csv"); s.add_argument("fichier")
     s = sp.add_parser("importer-page"); s.add_argument("fichier"); s.add_argument("--date")
+    s = sp.add_parser("completer", help="ex. completer 21894138 surface_habitable=140 annee_construction=1930")
+    s.add_argument("immoweb_id"); s.add_argument("valeurs", nargs="+", metavar="CHAMP=VALEUR")
+    s = sp.add_parser("fiche"); s.add_argument("immoweb_id")
     s = sp.add_parser("importer-indices"); s.add_argument("fichier")
     s = sp.add_parser("maj-statut"); s.add_argument("--jours", type=int, default=14)
     s = sp.add_parser("retirer"); s.add_argument("immoweb_id"); s.add_argument("--date")
@@ -411,7 +533,14 @@ def main():
     elif a.cmd == "importer-csv":
         print(f"{importer_csv(con, a.fichier)} observations importées")
     elif a.cmd == "importer-page":
-        importer_page(con, a.fichier, a.date); print("Annonce importée")
+        ident = importer_page(con, a.fichier, a.date)
+        print(f"Annonce {ident} importée")
+        afficher_fiche(con, ident, a.aujourdhui)
+    elif a.cmd == "completer":
+        completer(con, a.immoweb_id, **dict(v.split("=", 1) for v in a.valeurs))
+        afficher_fiche(con, a.immoweb_id, a.aujourdhui)
+    elif a.cmd == "fiche":
+        afficher_fiche(con, a.immoweb_id, a.aujourdhui)
     elif a.cmd == "importer-indices":
         print(f"{importer_indices(con, a.fichier)} indices importés")
     elif a.cmd == "maj-statut":

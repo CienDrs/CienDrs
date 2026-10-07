@@ -22,11 +22,28 @@ CREATE TABLE IF NOT EXISTS annonces (
     etat                TEXT,                      -- état du bâtiment selon Immoweb
     peb_lettre          TEXT,                      -- A++ … G
     peb_kwh_m2          REAL,                      -- consommation spécifique (kWh/m²/an)
-    description         TEXT,
+    description         TEXT,                      -- sans téléphones ni e-mails (RGPD)
+    titre               TEXT,
+    province            TEXT,
+    adresse_approximative INTEGER,                 -- 1 si Immoweb signale une localisation approximative
+    revenu_cadastral    REAL,
+    peb_reference       TEXT,                      -- numéro unique du certificat PEB
+    chauffage           TEXT,
+    cuisine             TEXT,
+    surface_jardin      REAL,
+    surface_terrasse    REAL,
+    nb_etages           INTEGER,
+    cave                INTEGER,
+    grenier             INTEGER,
+    vendeur_type        TEXT,                      -- agence / particulier
+    prix_ancien_immoweb REAL,                      -- ancien prix affiché par Immoweb (baisse signalée)
+    nb_vues             INTEGER,
+    nb_favoris          INTEGER,
     date_publication    TEXT,
     premiere_observation TEXT NOT NULL,
     derniere_observation TEXT NOT NULL,
-    date_retrait        TEXT                       -- NULL = annonce toujours en ligne
+    date_retrait        TEXT,                      -- NULL = annonce toujours en ligne
+    derniere_maj_detail TEXT                       -- dernière lecture de la page détaillée (collecte)
 );
 
 -- Une ligne à chaque fois qu'un prix différent est observé (historique des prix demandés)
