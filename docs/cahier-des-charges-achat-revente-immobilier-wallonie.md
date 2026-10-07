@@ -257,7 +257,7 @@ En l'absence de base publique de transactions à l'adresse, l'estimation **crois
 
 | ID | Exigence | Priorité |
 |---|---|---|
-| B1 | **Médianes Statbel** par commune (et si possible par ancienne commune / secteur), par type de maison (2-3 façades / 4 façades), dernière année et tendance | Must |
+| B1 | **Médianes Statbel** par commune, par type de maison (2-3 façades / 4 façades), dernière année et tendance, **importées automatiquement par l'application** (au démarrage, au plus tous les 30 jours) depuis l'API Open Data Wallonie-Bruxelles (jeu WalStat « Prix de l'immobilier résidentiel », source Statbel) ou, à défaut, le fichier open data le plus récent de Statbel ; l'indice d'évolution des prix de la zone est recalculé à chaque mise à jour ; aucun import par l'utilisateur | Must |
 | B2 | **Comparables d'annonces** : maisons de même type et même état dans un rayon de 2 km (élargi à 5 puis 10 km si moins de 8 comparables), surface ± 25 %, annonces actives et vendues récemment | Must |
 | B3 | Correction prix demandé → prix de vente (marge de négociation moyenne, défaut −5 %, paramétrable par commune) | Must |
 | B4 | Exclusion des valeurs aberrantes (méthode IQR) ; calcul de la médiane €/m², des quartiles et d'un **indice de confiance** | Must |
@@ -469,7 +469,8 @@ L'Annexe A rassemble les prix unitaires observés en Belgique en 2025-2026 pour 
 |---|---|---|
 | H1 | **Liste des biens** filtrable et triable (commune, prix, prix/m², score, PEB, état, statut actif / retiré / vendu) | MVP |
 | H2 | **Fiche du bien** : prix, prix/m², écart au médian communal, comparables, risques, historique des prix, mini-carte, prix d'achat maximum (détail : §5.10) | MVP |
-| H3 | **Écran « Données »** : import des fichiers Statbel, date de dernière mise à jour de chaque source | MVP |
+| H3 | **Écran « Données »** : état des mises à jour automatiques (date, source, erreurs), bouton « Mettre à jour maintenant », médianes de la zone | MVP |
+| H3b | **Écran « Paramètres »** : formulaires par thème (stratégie, achat et fiscalité, financement, revente, travaux, scénarios, estimation), valeurs en % et en €, aides contextuelles, retour aux valeurs par défaut ; les valeurs modifiées priment sur le fichier `parametres.toml` | MVP |
 | H4 | **Vue secteur** (commune ou rayon) : nuage prix / surface avec droite de régression, distribution du prix/m², carte des biens colorés par score | V2 |
 | H5 | **Comparateur** de 2 à 4 biens côte à côte, écarts mis en évidence | V2 |
 | H6 | **Notifications** (e-mail ou Telegram) sur les baisses de prix des annonces suivies et les nouvelles opportunités (prix ≤ prix d'achat maximum) | V2 / V3 |
@@ -560,7 +561,7 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | Prix des travaux | Référentiel interne + devis d'entrepreneurs locaux | Chiffrage |
 | Codes NIS, codes postaux, revenus par commune | Statbel (open data, annuel) | Rattachement communal, attractivité |
 | Géocodage | Nominatim (OpenStreetMap, ≈ 1 requête/s) en complément des adresses officielles ; repli sur le centre de la commune signalé « position approximative » | Localisation |
-| Zones inondables, plan de secteur, aléas | Services WMS/WFS du géoportail wallon (test « point dans zone ») | Risques |
+| Zones inondables, plan de secteur, contraintes du sous-sol | Services ArcGIS REST du géoportail wallon (`EAU/ALEA_INOND`, `AMENAGEMENT_TERRITOIRE/PDS`, `SOL_SOUS_SOL/CONSULT_SSOL`), opération « identify » au point du bien sur toutes les couches ; résultats présentés en clair (couche et valeur), sans liens ni champs techniques ; un risque automatique peut être marqué « vérifié, non bloquant » | Risques |
 | Annonces d'autres portails | Zimmo, Immovlan (pages sauvegardées) | V2 |
 | Texte d'annonce de n'importe quel site | Extraction par modèle de langage (API Claude ou Ollama en local) | Secours d'import |
 | Commerces, écoles, arrêts | Overpass (OpenStreetMap) | V3 |

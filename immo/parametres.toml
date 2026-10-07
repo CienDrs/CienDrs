@@ -86,25 +86,41 @@ taux_plus_value_pp = 0.165       # plus-value sur immeuble bâti revendu dans le
 additionnels_communaux = 0.075
 taux_isoc = 0.25
 
+[statbel]
+# Prix médians de vente par commune : téléchargés automatiquement par l'application.
+frequence_jours = 30             # nouvelle tentative de mise à jour au plus tous les N jours
+zone_indice = "Hainaut"          # zone de l'indice d'évolution des prix calculé à partir des médianes
+# Sources essayées dans l'ordre jusqu'à la première qui fonctionne.
+[[statbel.sources]]
+nom = "WalStat / Open Data Wallonie-Bruxelles — Prix de l'immobilier résidentiel (données annuelles, Statbel)"
+type = "fichier"
+url = "https://www.odwb.be/api/explore/v2.1/catalog/datasets/234002/exports/csv?delimiter=%3B&lang=fr"
+
+[[statbel.sources]]
+nom = "Statbel — page « Prix de l'immobilier » (fichier open data le plus récent)"
+type = "page"
+url = "https://statbel.fgov.be/fr/themes/habitat/prix-de-limmobilier"
+mots_cles = ["immo", "vastgoed", "commune", "gemeente"]
+
 [risques]
-# Couches WalOnMap interrogées automatiquement (services ArcGIS REST du géoportail wallon).
-# URLs À VÉRIFIER sur https://geoservices.wallonie.be/arcgis/rest/services ; en cas d'échec,
-# l'utilisateur coche les risques à la main depuis le lien WalOnMap de la fiche.
+# Services ArcGIS REST du géoportail de la Wallonie (https://geoservices.wallonie.be/arcgis/rest/services),
+# interrogés au point du bien par l'opération « identify » sur toutes leurs couches.
+# En cas d'échec, la fiche le signale et les risques peuvent être cochés à la main.
 [[risques.couches]]
 cle = "alea_inondation"
 libelle = "Aléa d'inondation"
-url = "https://geoservices.wallonie.be/arcgis/rest/services/EAU/ALEA_INOND/MapServer/0"
+url = "https://geoservices.wallonie.be/arcgis/rest/services/EAU/ALEA_INOND/MapServer"
 bloquant = true
 non_bloquant_si = ["faible", "tres faible"]   # seul un aléa moyen ou élevé est bloquant
 
 [[risques.couches]]
-cle = "contraintes_geotechniques"
-libelle = "Contraintes géotechniques majeures (puits de mine, karst…)"
-url = "https://geoservices.wallonie.be/arcgis/rest/services/SOL_SOUS_SOL/CONTRAINTES_GEOTECHNIQUES/MapServer/0"
+cle = "contraintes_sous_sol"
+libelle = "Contraintes du sous-sol (puits de mine, minières, carrières souterraines, karst)"
+url = "https://geoservices.wallonie.be/arcgis/rest/services/SOL_SOUS_SOL/CONSULT_SSOL/MapServer"
 bloquant = true
 
 [[risques.couches]]
 cle = "plan_de_secteur"
 libelle = "Plan de secteur (affectation)"
-url = "https://geoservices.wallonie.be/arcgis/rest/services/AMENAGEMENT_TERRITOIRE/PDS/MapServer/0"
+url = "https://geoservices.wallonie.be/arcgis/rest/services/AMENAGEMENT_TERRITOIRE/PDS/MapServer"
 bloquant = false

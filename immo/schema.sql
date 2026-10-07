@@ -113,3 +113,13 @@ CREATE TABLE IF NOT EXISTS analyses (
     resultat    TEXT NOT NULL,         -- JSON : estimations, bilan, décision
     PRIMARY KEY (immoweb_id, date, version_modele)
 );
+
+-- Mises à jour automatiques des sources externes (Statbel…)
+CREATE TABLE IF NOT EXISTS mises_a_jour (
+    source      TEXT PRIMARY KEY,
+    date        TEXT NOT NULL,          -- date et heure ISO de la dernière tentative
+    statut      TEXT NOT NULL,          -- 'ok' ou 'erreur'
+    lignes      INTEGER,
+    message     TEXT,
+    date_succes TEXT                    -- dernière mise à jour réussie
+);

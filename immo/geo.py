@@ -25,6 +25,13 @@ class SourceIndisponible(Exception):
     pass
 
 
+def _service(url):
+    """Nom lisible d'un service pour les messages d'erreur (sans l'URL complète)."""
+    parts = urllib.parse.urlsplit(url)
+    chemin = parts.path.split("/rest/services/")[-1].split("/MapServer")[0] if "/rest/services/" in parts.path else ""
+    return chemin or parts.netloc
+
+
 def http_json(url, timeout=20):
     """GET JSON avec 1 requête/seconde au maximum (politesse Nominatim)."""
     attente = 1.0 - (time.monotonic() - _derniere_requete[0])
@@ -35,8 +42,14 @@ def http_json(url, timeout=20):
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, ValueError) as e:
-        raise SourceIndisponible(f"{urllib.parse.urlsplit(url).netloc} : {e}") from e
+    except urllib.error.HTTPError as e:
+        raise SourceIndisponible(f"{_service(url)} : erreur HTTP {e.code}") from e
+    except urllib.error.URLError as e:
+        raise SourceIndisponible(f"{_service(url)} : service injoignable ({e.reason})") from e
+    except (TimeoutError, OSError) as e:
+        raise SourceIndisponible(f"{_service(url)} : délai dépassé") from e
+    except ValueError as e:
+        raise SourceIndisponible(f"{_service(url)} : réponse illisible") from e
 
 
 def distance_km(lat1, lon1, lat2, lon2):
@@ -68,32 +81,76 @@ def geocoder(rue=None, numero=None, code_postal=None, commune=None, http=http_js
     return None
 
 
-def interroger_couche(url, lat, lon, http=http_json):
-    """Entités d'une couche ArcGIS REST qui contiennent le point (liste d'attributs)."""
+CHAMPS_TECHNIQUES = {"objectid", "fid", "shape", "shape_area", "shape_length", "shape.area", "shape.len",
+                     "st_area(shape)", "st_length(shape)", "globalid", "pixel value"}
+VALEURS_VIDES = {"", "null", "nodata", "none", "<null>", "0"}
+
+
+def _lisible(v):
+    """Garde les valeurs utiles à l'utilisateur : ni liens, ni identifiants techniques, ni valeurs vides."""
+    if v is None:
+        return None
+    t = str(v).strip()
+    if t.lower() in VALEURS_VIDES or t.lower().startswith(("http://", "https://", "www.", "{")):
+        return None
+    if t.replace(".", "", 1).replace("-", "", 1).isdigit():       # identifiants et codes numériques
+        return None
+    return t
+
+
+def interroger_service(url, lat, lon, http=http_json):
+    """Opération ArcGIS « identify » sur toutes les couches d'un service MapServer, au point (lat, lon).
+
+    Retourne une liste de {couche, valeur, attributs} pour les entités qui contiennent le point.
+    L'opération porte sur toutes les couches (y compris les couches de groupe), contrairement à
+    « query » qui ne vise qu'une couche d'entités précise.
+    """
+    d = 0.0005
     q = urllib.parse.urlencode({
-        "geometry": f"{lon},{lat}", "geometryType": "esriGeometryPoint", "inSR": 4326,
-        "spatialRel": "esriSpatialRelIntersects", "outFields": "*", "returnGeometry": "false", "f": "json"})
-    res = http(f"{url.rstrip('/')}/query?{q}")
-    if "error" in res:
-        raise SourceIndisponible(f"{url} : {res['error'].get('message', res['error'])}")
-    return [f.get("attributes", {}) for f in res.get("features", [])]
+        "geometry": f"{lon},{lat}", "geometryType": "esriGeometryPoint", "sr": 4326,
+        "layers": "all", "tolerance": 1, "mapExtent": f"{lon - d},{lat - d},{lon + d},{lat + d}",
+        "imageDisplay": "400,400,96", "returnGeometry": "false", "f": "json"})
+    service = url.split("/MapServer")[0] + "/MapServer"
+    res = http(f"{service}/identify?{q}")
+    if isinstance(res, dict) and "error" in res:
+        err = res["error"]
+        raise SourceIndisponible(f"{_service(url)} : {err.get('message', 'erreur du service')} "
+                                 f"(code {err.get('code', '?')})")
+    resultats = []
+    for r in (res or {}).get("results", []):
+        attributs = {k: v for k, v in (r.get("attributes") or {}).items()
+                     if k.lower() not in CHAMPS_TECHNIQUES and _lisible(v)}
+        valeur = _lisible(r.get("value"))
+        if valeur is None and not attributs:
+            continue                       # pixel « NoData » ou entité sans information
+        resultats.append({"couche": r.get("layerName") or "", "valeur": valeur, "attributs": attributs})
+    return resultats
+
+
+def _resume(entites, max_lignes=4):
+    lignes = []
+    for e in entites:
+        texte = e["valeur"] or ", ".join(str(v) for v in list(e["attributs"].values())[:2])
+        ligne = f"{e['couche']} : {texte}" if e["couche"] else texte
+        if ligne not in lignes:
+            lignes.append(ligne)
+    reste = len(lignes) - max_lignes
+    return " · ".join(lignes[:max_lignes]) + (f" (+{reste})" if reste > 0 else "")
 
 
 def verifier_risques(lat, lon, p=None, http=http_json):
-    """{cle: {libelle, touche (bool|None), bloquant, details, erreur}} pour chaque couche configurée."""
+    """{cle: {libelle, touche (bool|None), bloquant, details, erreur, source}} pour chaque service configuré."""
     p = p or parametres.charger()
     resultats = {}
     for couche in p["risques"]["couches"]:
         r = {"libelle": couche["libelle"], "touche": None, "bloquant": False, "details": "", "erreur": None,
-             "source": couche["url"]}
+             "source": couche["url"].split("/MapServer")[0] + "/MapServer"}
         try:
-            entites = interroger_couche(couche["url"], lat, lon, http)
+            entites = interroger_service(couche["url"], lat, lon, http)
             r["touche"] = bool(entites)
-            valeurs = sorted({str(v) for e in entites for k, v in e.items()
-                              if v not in (None, "") and k.lower() not in ("objectid", "shape_area", "shape_length")})
-            r["details"] = ", ".join(valeurs)[:300]
+            r["details"] = _resume(entites) if entites else "aucune zone au point du bien"
             if entites and couche.get("bloquant"):
-                texte = normaliser(" ".join(valeurs))
+                texte = normaliser(" ".join(f"{e['couche']} {e['valeur'] or ''}" for e in entites))
                 r["bloquant"] = not any(normaliser(m) in texte for m in couche.get("non_bloquant_si", []))
         except SourceIndisponible as e:
             r["erreur"] = str(e)

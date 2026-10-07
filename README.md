@@ -28,7 +28,7 @@ streamlit run app.py
 
 `requirements.txt` est généré depuis `poetry.lock` (`poetry export --only main --without-hashes -f requirements.txt -o requirements.txt`, extension `poetry-plugin-export`) ; pour les tests, ajoutez `pip install pytest`.
 
-Au premier lancement, la base est vide : page **Données** → « Charger les données d'exemple (fictives) » pour essayer l'outil, puis remplacez-les par vos données.
+Au lancement, l'application **importe elle-même les prix médians Statbel** par commune (connexion internet nécessaire, puis au plus tous les 30 jours) et la table des codes postaux de la zone. Pour essayer l'outil sans vos propres annonces : page **Données** → « Charger des annonces d'exemple (fictives) ».
 
 Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en texte avec l'API Claude (sinon, extraction par expressions régulières).
 
@@ -39,8 +39,8 @@ Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en 
 | **Ajouter un bien** | Import d'une page Immoweb enregistrée (Ctrl+S), d'un texte d'annonce de n'importe quel site (API Claude ou expressions régulières) ou saisie manuelle → **écran de vérification** obligatoire (prix, surface, code postal wallon) → géocodage et vérification des risques |
 | **Biens** | Liste filtrable (commune, état, en ligne, exemples), prix/m², jours en ligne, baisses de prix, dernière décision |
 | **Fiche du bien** | Prix/m², **écart au médian Statbel** de la commune, **prix/m² vs comparables**, valeur en l'état et après travaux (fourchette, confiance), graphiques et carte, pré-chiffrage des travaux, **modèle financier** (3 scénarios, frais wallons, portage, impôt indicatif), **prix d'achat maximum**, **décision GO / GO SOUS CONDITIONS / NO-GO** (règles R1 à R7), risques automatiques et manuels, historique des prix, analyses enregistrées |
-| **Données** | Import Statbel (CSV/Excel), codes postaux, indices de prix, annonces CSV ; mise à jour des statuts ; export |
-| **Paramètres** | Taux, ratios et seuils (fichier `immo/parametres.toml`) |
+| **Données** | État de la mise à jour automatique Statbel (date, source, erreurs) et bouton « Mettre à jour maintenant » ; médianes de la zone ; import / export d'annonces |
+| **Paramètres** | Formulaires par thème (stratégie, fiscalité, financement, revente, travaux, scénarios, estimation) ; les valeurs modifiées sont enregistrées dans `data/parametres_utilisateur.json`, les valeurs par défaut restent dans `immo/parametres.toml` |
 
 ## Organisation
 
@@ -62,8 +62,8 @@ Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en 
 
 ## Limites connues de la V1
 
-- **Données d'exemple fictives** : annonces `EX…`, médianes Statbel et indices marqués « FICTIF ». À remplacer par les fichiers officiels de Statbel et vos propres annonces.
+- **Données d'exemple fictives** : annonces `EX…` (masquables dans la liste). Les médianes Statbel sont, elles, téléchargées automatiquement.
+- **Sources Statbel et géoportail non testées en conditions réelles** : l'environnement de développement n'y a pas accès. L'application gère plusieurs formats de fichier et affiche clairement les échecs ; envoyez le message d'erreur de la page Données ou de l'onglet Risques s'il y en a un.
 - **Collecte des annonces** : pas de collecte automatique d'Immoweb (mode M7 en attente de décision) ; import page par page, texte collé ou CSV.
-- **Risques WalOnMap** : les adresses des services du géoportail wallon sont configurées dans `parametres.toml` mais n'ont pas pu être vérifiées depuis l'environnement de développement ; en cas d'échec, la fiche le signale et les risques se cochent à la main.
 - **Ratios de travaux** indicatifs (cahier des charges D4) : à calibrer avec vos devis ; le modèle hédonique et le score arrivent en V2.
 - **Fiscalité** indicative : à valider par un notaire / fiscaliste.

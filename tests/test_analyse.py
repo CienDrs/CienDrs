@@ -130,23 +130,37 @@ def test_extraction_llm_refus_bascule_regex():
 
 # ------------------------------------------------------------------ géo
 
+def _identify(*resultats):
+    return {"results": [{"layerName": n, "value": v, "attributes": a} for n, v, a in resultats]}
+
+
 def test_risques_et_geocodage_simules(base_exemple):
     con, _ = base_exemple
+    appels = []
 
     def http(url):
+        appels.append(url)
         if "nominatim" in url:
             return [{"lat": "50.4467", "lon": "3.9429"}]
         if "ALEA_INOND" in url:
-            return {"features": [{"attributes": {"OBJECTID": 1, "VALEUR": "Aléa élevé"}}]}
-        if "CONTRAINTES" in url:
-            return {"features": []}
-        raise geo.SourceIndisponible("service en panne")
+            return _identify(("Aléa d'inondation par débordement", "Élevé",
+                              {"OBJECTID": 12, "ALEA": "Élevé", "FICHE": "https://geoportail.wallonie.be/x.pdf"}),
+                             ("Aléa - raster", "NoData", {"Pixel Value": "NoData"}))
+        if "CONSULT_SSOL" in url:
+            return _identify()
+        raise geo.SourceIndisponible("AMENAGEMENT_TERRITOIRE/PDS : erreur HTTP 503")
 
     r = geo.verifier_risques(50.4467, 3.9429, P, http)
-    assert r["alea_inondation"]["bloquant"] and not r["contraintes_geotechniques"]["touche"]
-    assert r["plan_de_secteur"]["erreur"]
-    faible = geo.verifier_risques(50.4, 3.9, P, lambda u: {"features": [{"attributes": {"VALEUR": "Aléa faible"}}]})
+    assert all("/identify?" in u and "layers=all" in u for u in appels)
+    inond = r["alea_inondation"]
+    assert inond["bloquant"] and inond["details"] == "Aléa d'inondation par débordement : Élevé"
+    assert "http" not in inond["details"]                                 # aucun lien dans les détails
+    assert not r["contraintes_sous_sol"]["touche"]
+    assert r["plan_de_secteur"]["erreur"] == "AMENAGEMENT_TERRITOIRE/PDS : erreur HTTP 503"
+    faible = geo.verifier_risques(50.4, 3.9, P, lambda u: _identify(("Aléa d'inondation", "Faible", {})))
     assert faible["alea_inondation"]["touche"] and not faible["alea_inondation"]["bloquant"]
+    erreur = geo.verifier_risques(50.4, 3.9, P, lambda u: {"error": {"code": 400, "message": "Invalid parameters"}})
+    assert erreur["alea_inondation"]["erreur"] == "EAU/ALEA_INOND : Invalid parameters (code 400)"
 
     con.execute("UPDATE annonces SET latitude = NULL, longitude = NULL WHERE immoweb_id = '21894138'")
     bien, _ = analyse.charger_bien(con, "21894138", AUJ)
@@ -155,3 +169,7 @@ def test_risques_et_geocodage_simules(base_exemple):
     res = analyse.analyser(con, "21894138", P, aujourd_hui=AUJ)
     assert res["bien"]["latitude"] == pytest.approx(50.4467)
     assert res["decision"]["statut"] == finance.NO_GO                         # aléa élevé -> bloquant
+    # après vérification par l'utilisateur, le risque automatique n'est plus bloquant
+    analyse.enregistrer_risques_leves(con, "21894138", ["alea_inondation"])
+    res = analyse.analyser(con, "21894138", P, aujourd_hui=AUJ)
+    assert "Aléa d'inondation" not in next(r for r in res["decision"]["regles"] if r["code"] == "R5")["detail"]

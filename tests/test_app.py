@@ -41,3 +41,22 @@ def test_ajout_par_texte_puis_verification(app):
     assert at.session_state["brouillon"]["prix"] == 165_000
     next(b for b in at.button if "Valider" in b.label).click().run()
     assert not at.exception, [e.value for e in at.exception]
+
+
+def test_parametres_formulaires_sans_json(app):
+    at = app("parametres")
+    assert not at.json                                      # plus d'affichage JSON brut
+    assert len(at.tabs) == 7
+    champ = next(n for n in at.number_input if n.label.startswith("Décote visée"))
+    assert champ.value == pytest.approx(20.0)
+    champ.set_value(25.0)
+    next(b for b in at.button if b.label == "💾 Enregistrer" and b.key == "e1").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    from immo import parametres
+    assert parametres.charger()["strategie"]["decote_cible"] == pytest.approx(0.25)
+
+
+def test_donnees_sans_import_statbel_manuel(app):
+    at = app("donnees")
+    assert not at.exception
+    assert not any("Statbel" in (u.label or "") for u in at.get("file_uploader"))

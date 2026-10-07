@@ -437,15 +437,34 @@ def onglet_risques(c, res):
                    + (" (position approximative)" if b.get("adresse_approximative") else "")
                    + f" — à {b.get('distance_mons_km') or geo.distance_centre(b['latitude'], b['longitude'], P):.1f} km "
                      f"de la {P['zone']['centre_nom']}")
-    auto = res["risques"]["auto"]
+    auto, leves = res["risques"]["auto"], res["risques"].get("leves", [])
     if auto:
-        st.markdown(f"**Vérification automatique** (WalOnMap, {res['risques']['auto_date']})")
-        st.dataframe(pd.DataFrame([{"Couche": r["libelle"],
-                                    "Résultat": "source indisponible" if r["erreur"] else
-                                    ("⛔ concerné (bloquant)" if r["bloquant"] else
-                                     ("⚠️ concerné" if r["touche"] else "✅ non concerné")),
-                                    "Détail": r["erreur"] or r["details"]} for r in auto.values()]),
-                     hide_index=True, width="stretch")
+        st.markdown(f"**Vérification automatique** — géoportail de la Wallonie, {res['risques']['auto_date']}")
+
+        def resultat(cle, r):
+            if r["erreur"]:
+                return "❔ non vérifié (service indisponible)"
+            if r["bloquant"]:
+                return "✅ vérifié, non bloquant" if cle in leves else "⛔ concerné — bloquant"
+            return "⚠️ concerné" if r["touche"] else "✅ non concerné"
+
+        for cle, r in auto.items():
+            with st.container(border=True):
+                g, d = st.columns([2, 3])
+                g.markdown(f"**{r['libelle']}**  \n{resultat(cle, r)}")
+                d.markdown(r["erreur"] or r["details"] or "—")
+                if r.get("source"):
+                    d.caption(f"Source : [service du géoportail]({r['source']})")
+        concernes = {cle: r["libelle"] for cle, r in auto.items() if r.get("bloquant")}
+        if concernes:
+            choix = st.multiselect("Risques automatiques vérifiés sur place ou auprès de l'administration et jugés "
+                                   "non bloquants", options=list(concernes), default=[k for k in leves if k in concernes],
+                                   format_func=concernes.get, placeholder="Aucun")
+            if set(choix) != set(leves) and st.button("Enregistrer la vérification"):
+                analyse.enregistrer_risques_leves(c, b["immoweb_id"], choix)
+                st.rerun()
+    else:
+        st.info("Risques pas encore vérifiés pour ce bien.")
     if st.button("🔄 Géocoder et vérifier les risques"):
         with st.spinner("Interrogation de Nominatim et du géoportail wallon…"):
             for m in geo.enrichir(c, b, P):
@@ -454,9 +473,8 @@ def onglet_risques(c, res):
     st.markdown("**Risques constatés manuellement** (WalOnMap, renseignements urbanistiques, BDES, visite)")
     st.caption("[Ouvrir WalOnMap](https://geoportail.wallonie.be/walonmap) · "
                "[Banque de données de l'état des sols](https://bdes.wallonie.be) — un risque coché est bloquant (R5).")
-    choix = st.multiselect("Risques bloquants", placeholder="Aucun", options=RISQUES_MANUELS + [r for r in res["risques"]["manuels"]
-                                                                   if r not in RISQUES_MANUELS],
-                           default=res["risques"]["manuels"])
+    choix = st.multiselect("Risques bloquants", placeholder="Aucun", options=RISQUES_MANUELS + [
+        r for r in res["risques"]["manuels"] if r not in RISQUES_MANUELS], default=res["risques"]["manuels"])
     if choix != res["risques"]["manuels"] and st.button("Enregistrer les risques"):
         analyse.enregistrer_risques_manuels(c, b["immoweb_id"], choix)
         st.rerun()
@@ -562,85 +580,250 @@ def page_fiche():
 
 def charger_exemples(c):
     annonces.importer_csv(c, RACINE / "data" / "annonces_exemple.csv")
-    annonces.importer_indices(c, RACINE / "data" / "indices_prix_exemple.csv")
-    statbel.importer_codes_postaux(c, RACINE / "data" / "codes_postaux_zone_mons.csv")
-    statbel.importer_medianes(c, RACINE / "data" / "statbel_medianes_exemple.csv", source="Statbel — EXEMPLE FICTIF")
     annonces.maj_statut(c, 14)
+
+
+def mise_a_jour_automatique(c, force=False):
+    """Codes postaux de la zone + médianes Statbel, une fois par session (et au plus tous les N jours)."""
+    statbel.importer_codes_postaux_par_defaut(c, RACINE / "data" / "codes_postaux_zone_mons.csv")
+    if os.environ.get("IMMO_HORS_LIGNE") and not force:
+        return None
+    if force or (not st.session_state.get("_statbel_verifie") and statbel.a_mettre_a_jour(c, P)):
+        with st.spinner("Mise à jour des prix médians Statbel…"):
+            r = statbel.mettre_a_jour(c, P, force=True)
+        st.session_state["_statbel_verifie"] = True
+        return r
+    st.session_state["_statbel_verifie"] = True
+    return None
 
 
 def page_donnees():
     st.title("🗂️ Données")
     c = con()
-    n = {t: c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-         for t in ("annonces", "historique_prix", "communes", "medianes_statbel", "codes_postaux", "indices_prix",
-                   "analyses")}
-    cols = st.columns(len(n))
-    for col, (t, v) in zip(cols, n.items()):
-        col.metric(t.replace("_", " "), v)
-    st.caption(f"Base : `{BASE}`")
+    n = {"Annonces": "annonces", "Prix observés": "historique_prix", "Communes": "communes",
+         "Médianes Statbel": "medianes_statbel", "Codes postaux": "codes_postaux", "Analyses": "analyses"}
+    for col, (lib, t) in zip(st.columns(len(n)), n.items()):
+        col.metric(lib, c.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0])
 
-    sources = pd.read_sql("SELECT 'Statbel' AS source, MAX(source) AS detail, CAST(MAX(annee) AS TEXT) AS derniere_periode "
-                          "FROM medianes_statbel UNION ALL SELECT 'Indices de prix', MAX(source), MAX(periode) "
-                          "FROM indices_prix UNION ALL SELECT 'Annonces', COUNT(*) || ' annonces', "
-                          "MAX(derniere_observation) FROM annonces", c)
-    st.dataframe(sources, hide_index=True)
+    st.subheader("Prix médians Statbel")
+    st.caption("Importés automatiquement par l'application (au démarrage, au plus tous les "
+               f"{P['statbel']['frequence_jours']} jours) depuis les sources officielles. L'indice d'évolution des "
+               "prix est recalculé à chaque mise à jour.")
+    etat = statbel.etat_mise_a_jour(c)
+    a, b, d = st.columns(3)
+    if etat:
+        a.metric("Dernière mise à jour réussie", (etat["date_succes"] or "jamais")[:16].replace("T", " "))
+        b.metric("Dernière tentative", etat["date"][:16].replace("T", " "))
+        b.caption("✅ réussie" if etat["statut"] == "ok" else "⛔ échec")
+        annees = c.execute("SELECT MIN(annee), MAX(annee) FROM medianes_statbel").fetchone()
+        d.metric("Années disponibles", f"{annees[0]} – {annees[1]}" if annees[0] else "—")
+        if etat["statut"] == "ok":
+            st.success(f"Source : {etat['message']} — {etat['lignes']} médianes importées.")
+        else:
+            st.error("La dernière mise à jour a échoué. Détail : " + (etat["message"] or ""))
+    else:
+        st.info("Les prix médians Statbel n'ont pas encore été importés.")
+    if st.button("🔄 Mettre à jour maintenant"):
+        r = mise_a_jour_automatique(c, force=True)
+        if r and r["statut"] == "ok":
+            st.success(f"{r['lignes']} médianes importées ({r['source']}).")
+        st.rerun()
+    med = pd.read_sql("SELECT c.nom AS Commune, m.annee AS Année, m.type_bien AS Type, m.mediane AS 'Prix médian (€)', "
+                      "m.nb_transactions AS Transactions FROM medianes_statbel m JOIN communes c ON c.nis = m.nis "
+                      "JOIN (SELECT DISTINCT commune FROM codes_postaux) z ON z.commune = c.nom "
+                      "WHERE m.annee = (SELECT MAX(annee) FROM medianes_statbel) ORDER BY c.nom, m.type_bien", c)
+    if not med.empty:
+        med["Type"] = med["Type"].map({"maison_2_3_facades": "Maisons 2-3 façades", "maison_4_facades": "Maisons 4 façades",
+                                       "maison": "Maisons"}).fillna(med["Type"])
+        with st.expander(f"Médianes de la zone ({len(med)} lignes, dernière année)"):
+            st.dataframe(med, hide_index=True, width="stretch",
+                         column_config={"Prix médian (€)": st.column_config.NumberColumn(format="%.0f")})
 
-    st.subheader("Importer")
-    a, b = st.columns(2)
-    with a:
-        f = st.file_uploader("Prix médians Statbel par commune (CSV ou Excel)", type=["csv", "txt", "xlsx"])
-        if f and st.button("Importer Statbel"):
-            try:
-                st.success(f"{statbel.importer_medianes(c, f, f.name)} lignes importées")
-            except ValueError as e:
-                st.error(str(e))
-        f = st.file_uploader("Codes postaux → communes (CSV : code_postal, localite, commune)", type=["csv"])
-        if f and st.button("Importer les codes postaux"):
-            st.success(f"{statbel.importer_codes_postaux(c, f, f.name)} lignes importées")
-    with b:
-        f = st.file_uploader("Indice des prix (CSV : zone, periode, indice, source)", type=["csv"])
-        if f and st.button("Importer les indices"):
-            tmp = RACINE / "data" / "_import_indices.csv"
-            tmp.write_bytes(f.getvalue())
-            st.success(f"{annonces.importer_indices(c, tmp)} indices importés")
-            tmp.unlink()
-        f = st.file_uploader("Annonces (CSV d'observations, format de data/annonces_exemple.csv)", type=["csv"])
-        if f and st.button("Importer les annonces"):
-            tmp = RACINE / "data" / "_import_annonces.csv"
-            tmp.write_bytes(f.getvalue())
-            st.success(f"{annonces.importer_csv(c, tmp)} observations importées")
-            tmp.unlink()
-
-    st.subheader("Maintenance")
-    a, b, c_ = st.columns(3)
+    st.subheader("Annonces")
+    a, b, d = st.columns(3)
     jours = a.number_input("Retirer les annonces non revues depuis (jours)", value=14, step=1)
     if a.button("Mettre à jour les statuts"):
         st.success(f"{annonces.maj_statut(c, int(jours))} annonces marquées retirées")
     b.download_button("⬇️ Exporter les annonces (CSV)", annonces.tableau_annonces(c).to_csv(index=False),
                       "annonces.csv", "text/csv")
-    if c_.button("Charger les données d'exemple (fictives)"):
+    if d.button("Charger des annonces d'exemple (fictives)"):
         charger_exemples(c)
-        st.success("Exemples chargés : 180 annonces fictives, indices et médianes Statbel FICTIFS, codes postaux.")
+        st.success("180 annonces fictives chargées (marquées « exemple fictif »).")
         st.rerun()
-    st.caption("Les données d'exemple sont marquées « exemple fictif » / « FICTIF » et peuvent être masquées dans "
-               "la liste des biens. Remplacez les médianes et indices par les fichiers officiels de Statbel.")
+    f = st.file_uploader("Importer des annonces (CSV d'observations, format de data/annonces_exemple.csv)", type=["csv"])
+    if f and st.button("Importer les annonces"):
+        tmp = RACINE / "data" / "_import_annonces.csv"
+        tmp.write_bytes(f.getvalue())
+        st.success(f"{annonces.importer_csv(c, tmp)} observations importées")
+        tmp.unlink()
+
+
+# ------------------------------------------------------------------ page : paramètres
+
+def _pourcent(col, label, valeur, aide=None, maxi=100.0, pas=0.5):
+    return col.number_input(label, min_value=0.0, max_value=maxi, value=round(float(valeur) * 100, 3), step=pas,
+                            format="%.2f", help=aide) / 100
+
+
+def _euros(col, label, valeur, aide=None, pas=100.0):
+    return col.number_input(label, min_value=0.0, value=float(valeur), step=pas, format="%.0f", help=aide)
+
+
+def _bouton_enregistrer(cle):
+    return st.form_submit_button("💾 Enregistrer", type="primary", key=cle)
 
 
 def page_parametres():
     st.title("⚙️ Paramètres")
-    st.caption(f"Modifiables dans `{parametres.CHEMIN_DEFAUT.relative_to(RACINE)}` (rechargés au redémarrage). "
-               "Les taux fiscaux et les ratios de travaux sont indicatifs : à faire valider.")
-    a, b = st.columns(2)
-    with a:
-        st.markdown("**Stratégie**")
-        st.json(P["strategie"])
-        st.markdown("**Acquisition et fiscalité**")
-        st.json({**P["acquisition"], **P["fiscalite"]})
-    with b:
-        st.markdown("**Travaux (€/m² TVAC)**")
-        st.json(P["travaux"])
-        st.markdown("**Scénarios**")
-        st.json(P["scenarios"])
+    st.caption("Les modifications s'appliquent immédiatement à toutes les analyses. Les taux fiscaux et les prix des "
+               "travaux sont indicatifs : faites-les valider par un notaire ou un fiscaliste, et calibrez-les avec vos devis.")
+    D = parametres.defauts()
+    onglets = st.tabs(["🎯 Stratégie", "🏛️ Achat et fiscalité", "🏦 Financement", "🔁 Revente", "🛠️ Travaux",
+                       "📈 Scénarios", "📊 Estimation"])
+
+    with onglets[0], st.form("strategie"):
+        s = P["strategie"]
+        a, b = st.columns(2)
+        decote = _pourcent(a, "Décote visée sous la valeur du marché (%)", s["decote_cible"],
+                           "Prix cible = valeur en l'état × (1 − décote). Règle R2.")
+        tol = _pourcent(b, "Tolérance sur la décote (%)", s.get("tolerance_decote", 0),
+                        "Ex. 2 % : un achat à 82 % de la valeur reste accepté.")
+        a, b, d = st.columns(3)
+        pv = _euros(a, "Plus-value nette minimale (€)", s["plus_value_min"], "Dans le scénario prudent. Règle R1.", 1000.0)
+        marge = _pourcent(b, "Marge minimale sur le prix de revient (%)", s["marge_min_pct_revient"], "Règle R3.")
+        duree = d.number_input("Durée maximale de l'opération (mois)", 1, 60, int(s["duree_max_mois"]), help="Règle R7.")
+        rayon = st.slider("Rayon de la zone autour de Mons (km)", 1, 30, int(P["zone"]["rayon_km"]), help="Règle R6.")
+        if _bouton_enregistrer("e1"):
+            parametres.enregistrer({"strategie": {"decote_cible": decote, "tolerance_decote": tol, "plus_value_min": pv,
+                                                  "marge_min_pct_revient": marge, "duree_max_mois": duree},
+                                    "zone": {"rayon_km": rayon}})
+            st.rerun()
+
+    with onglets[1], st.form("achat"):
+        ac, fi = P["acquisition"], P["fiscalite"]
+        regimes = {"personne_physique": "Personne physique", "marchand_de_biens": "Marchand de biens (société)"}
+        regime = st.radio("Régime par défaut", list(regimes), format_func=regimes.get, horizontal=True,
+                          index=list(regimes).index(ac["regime"]))
+        a, b, d = st.columns(3)
+        dpp = _pourcent(a, "Droits d'enregistrement — personne physique (%)", ac["droits_personne_physique"])
+        dmb = _pourcent(b, "Droits d'enregistrement — marchand de biens (%)", ac["droits_marchand_de_biens"])
+        notaire = _euros(d, "Honoraires et frais du notaire (€)", ac["frais_notaire_fixes"], "Forfait TVAC.")
+        st.markdown("**Impôt sur la plus-value (indicatif)**")
+        a, b, d = st.columns(3)
+        tpp = _pourcent(a, "Taux plus-value — personne physique (%)", fi["taux_plus_value_pp"],
+                        "Plus-value sur immeuble bâti revendu dans les 5 ans.")
+        add = _pourcent(b, "Additionnels communaux (%)", fi["additionnels_communaux"])
+        isoc = _pourcent(d, "Impôt des sociétés (%)", fi["taux_isoc"])
+        if _bouton_enregistrer("e2"):
+            parametres.enregistrer({"acquisition": {"regime": regime, "droits_personne_physique": dpp,
+                                                    "droits_marchand_de_biens": dmb, "frais_notaire_fixes": notaire},
+                                    "fiscalite": {"taux_plus_value_pp": tpp, "additionnels_communaux": add,
+                                                  "taux_isoc": isoc}})
+            st.rerun()
+
+    with onglets[2], st.form("financement"):
+        po = P["portage"]
+        forfait = _euros(st, "Coût de portage forfaitaire par mois (€) — 0 pour le calcul détaillé ci-dessous",
+                         po.get("portage_mensuel", 0), pas=50.0)
+        a, b, d = st.columns(3)
+        taux = _pourcent(a, "Taux d'intérêt annuel (%)", po["taux_interet"], pas=0.1)
+        quotite = _pourcent(b, "Part financée par emprunt (%)", po["quotite_financee"], pas=5.0)
+        acte = _pourcent(d, "Frais de l'acte de crédit (% de l'emprunt)", po["frais_acte_credit"], pas=0.1)
+        a, b, d, e = st.columns(4)
+        index = a.number_input("Indexation du revenu cadastral", 1.0, 5.0, float(po["indexation_revenu_cadastral"]),
+                               0.01, format="%.4f", help="Coefficient de l'année (SPF Finances).")
+        prec = _pourcent(b, "Précompte régional (%)", po["taux_precompte_regional"], pas=0.05)
+        cent = d.number_input("Centimes additionnels", 0, 10000, int(po["centimes_additionnels"]), 50)
+        charges = _euros(e, "Charges mensuelles (€)", po["charges_mensuelles"], "Assurance, énergie, eau…", 10.0)
+        if _bouton_enregistrer("e3"):
+            parametres.enregistrer({"portage": {"portage_mensuel": forfait, "taux_interet": taux,
+                                                "quotite_financee": quotite, "frais_acte_credit": acte,
+                                                "indexation_revenu_cadastral": index, "taux_precompte_regional": prec,
+                                                "centimes_additionnels": cent, "charges_mensuelles": charges}})
+            st.rerun()
+
+    with onglets[3], st.form("revente"):
+        r = P["revente"]
+        a, b, d = st.columns(3)
+        com = _pourcent(a, "Commission d'agence (% HTVA)", r["commission_agence"], pas=0.25)
+        tva = _pourcent(b, "TVA sur la commission (%)", r["tva_commission"])
+        fixes = _euros(d, "Frais fixes de revente (€)", r["frais_fixes"], "Certificat PEB, contrôle électrique, attestation de sol…", 50.0)
+        if _bouton_enregistrer("e4"):
+            parametres.enregistrer({"revente": {"commission_agence": com, "tva_commission": tva, "frais_fixes": fixes}})
+            st.rerun()
+
+    with onglets[4], st.form("travaux"):
+        t = P["travaux"]
+        noms = {"rafraichissement": "Rafraîchissement", "renovation_moyenne": "Rénovation moyenne",
+                "renovation_lourde": "Rénovation lourde"}
+        st.markdown("**Coût au m² par niveau de rénovation (TVAC, hors imprévus)** — utilisé pour le pré-chiffrage")
+        tableau = pd.DataFrame([{"Niveau": noms[k], "Bas (€/m²)": v[0], "Haut (€/m²)": v[1],
+                                 "Imprévus (%)": t["imprevus"][k] * 100} for k, v in t["niveaux"].items()])
+        edite = st.data_editor(tableau, hide_index=True, disabled=["Niveau"], width="stretch",
+                               column_config={"Bas (€/m²)": st.column_config.NumberColumn(min_value=0, step=10),
+                                              "Haut (€/m²)": st.column_config.NumberColumn(min_value=0, step=10),
+                                              "Imprévus (%)": st.column_config.NumberColumn(min_value=0, max_value=100)})
+        a, b = st.columns(2)
+        duree = a.number_input("Durée par défaut de l'opération (mois)", 1, 36, int(t["duree_defaut_mois"]))
+        supp = _euros(b, "Supplément par classe PEB gagnée (€/m²)", t["supplement_par_classe_peb_m2"], pas=5.0)
+        if _bouton_enregistrer("e5"):
+            cles = list(t["niveaux"])
+            parametres.enregistrer({"travaux": {
+                "niveaux": {k: [float(edite.iloc[i]["Bas (€/m²)"]), float(edite.iloc[i]["Haut (€/m²)"])]
+                            for i, k in enumerate(cles)},
+                "imprevus": {k: float(edite.iloc[i]["Imprévus (%)"]) / 100 for i, k in enumerate(cles)},
+                "duree_defaut_mois": duree, "supplement_par_classe_peb_m2": supp}})
+            st.rerun()
+
+    with onglets[5], st.form("scenarios"):
+        sc = P["scenarios"]
+        valeurs = {}
+        for col, nom, titre in zip(st.columns(2), ("prudent", "optimiste"), ("Scénario prudent", "Scénario optimiste")):
+            col.markdown(f"**{titre}**")
+            valeurs[nom] = {
+                "revente": col.number_input("Prix de revente (± %)", -50.0, 50.0, sc[nom]["revente"] * 100, 1.0,
+                                            key=f"r{nom}") / 100,
+                "travaux": col.number_input("Coût des travaux (± %)", -50.0, 100.0, sc[nom]["travaux"] * 100, 1.0,
+                                            key=f"t{nom}") / 100,
+                "mois": col.number_input("Durée (± mois)", -12, 24, int(sc[nom]["mois"]), key=f"m{nom}")}
+        if _bouton_enregistrer("e6"):
+            parametres.enregistrer({"scenarios": valeurs})
+            st.rerun()
+
+    with onglets[6], st.form("estimation"):
+        es = P["estimation"]
+        a, b, d = st.columns(3)
+        nego = _pourcent(a, "Marge de négociation (prix demandé → prix de vente, %)", es["marge_negociation"])
+        mini = b.number_input("Nombre minimal de comparables", 1, 50, int(es["min_comparables"]))
+        cible = d.selectbox("Classe PEB visée après travaux", travaux.CLASSES_PEB,
+                            index=travaux.CLASSES_PEB.index(es["peb_classe_cible_defaut"]))
+        st.markdown("**Valeur relative selon l'état du bien** (base « Bon » = 100 %)")
+        coefs = st.data_editor(pd.DataFrame([{"État": k, "Valeur (%)": v * 100} for k, v in es["coef_etat"].items()]),
+                               hide_index=True, disabled=["État"], width="stretch",
+                               column_config={"Valeur (%)": st.column_config.NumberColumn(min_value=10, max_value=200)})
+        if _bouton_enregistrer("e7"):
+            parametres.enregistrer({"estimation": {
+                "marge_negociation": nego, "min_comparables": mini, "peb_classe_cible_defaut": cible,
+                "coef_etat": {r["État"]: float(r["Valeur (%)"]) / 100 for _, r in coefs.iterrows()}}})
+            st.rerun()
+
+    st.divider()
+    a, b = st.columns([3, 1])
+    modifies = parametres.surcharges()
+    a.caption(f"{sum(len(v) if isinstance(v, dict) else 1 for v in modifies.values())} valeur(s) modifiée(s) par "
+              "rapport aux valeurs par défaut." if modifies else "Toutes les valeurs sont celles par défaut.")
+    if modifies and b.button("↺ Revenir aux valeurs par défaut"):
+        parametres.reinitialiser()
+        st.rerun()
+    if D != P:
+        with st.expander("Voir les valeurs modifiées"):
+            lignes = []
+            for section, vals in modifies.items():
+                for cle, v in (vals.items() if isinstance(vals, dict) else [(section, vals)]):
+                    if not isinstance(v, dict):
+                        lignes.append({"Section": section, "Paramètre": cle, "Valeur": str(v),
+                                       "Par défaut": str(D.get(section, {}).get(cle))})
+            st.dataframe(pd.DataFrame(lignes), hide_index=True, width="stretch")
 
 
 PAGE_BIENS = st.Page(page_biens, title="Biens", icon="📋", default=True)
@@ -649,6 +832,7 @@ PAGE_FICHE = st.Page(page_fiche, title="Fiche du bien", icon="🏠")
 PAGE_DONNEES = st.Page(page_donnees, title="Données", icon="🗂️")
 PAGE_PARAMETRES = st.Page(page_parametres, title="Paramètres", icon="⚙️")
 
+mise_a_jour_automatique(con())
 PAGES = {"biens": page_biens, "ajouter": page_ajouter, "fiche": page_fiche, "donnees": page_donnees,
          "parametres": page_parametres}
 if st.session_state.get("_page_test") in PAGES:      # utilisé par les tests automatisés (AppTest)

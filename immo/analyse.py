@@ -48,6 +48,15 @@ def risques_manuels(con, ident):
     return geo.lire(con, ident).get("risques_manuels", {}).get("valeur") or []
 
 
+def risques_leves(con, ident):
+    """Risques automatiques vérifiés par l'utilisateur et jugés non bloquants (clés des couches)."""
+    return geo.lire(con, ident).get("risques_leves", {}).get("valeur") or []
+
+
+def enregistrer_risques_leves(con, ident, cles):
+    geo.enregistrer(con, ident, "risques_leves", list(cles), "Vérification utilisateur")
+
+
 def enregistrer_risques_manuels(con, ident, liste):
     geo.enregistrer(con, ident, "risques_manuels", list(liste), "Saisie utilisateur (WalOnMap / visite)")
 
@@ -83,7 +92,9 @@ def analyser(con, ident, p=None, surcharges=None, aujourd_hui=None):
     manuels = risques_manuels(con, ident)
     res["risques"] = {"auto": auto, "auto_date": (enrich.get("risques_auto") or {}).get("date"),
                       "manuels": manuels}
-    bloquants = [r["libelle"] for r in auto.values() if r.get("bloquant")] + list(manuels)
+    leves = risques_leves(con, ident)
+    res["risques"]["leves"] = leves
+    bloquants = [r["libelle"] for cle, r in auto.items() if r.get("bloquant") and cle not in leves] + list(manuels)
 
     # Hypothèses : valeurs par défaut < hypothèses enregistrées < surcharges de l'écran
     defaut = {
