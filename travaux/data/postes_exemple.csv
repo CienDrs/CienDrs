@@ -1,0 +1,859 @@
+chantier_id,poste,unite,quantite,gamme,annee_construction,cout_ttc
+CH001,peinture_sols,m² habitable,93.0,standard,1967,5270.0
+CH001,electricite,m² habitable,93.0,standard,1967,8380.0
+CH001,salle_de_bain,m² SDB,7.8,standard,1967,10560.0
+CH001,cuisine,ml cuisine,3.7,standard,1967,6880.0
+CH001,chassis,pièce,8.0,standard,1967,7310.0
+CH001,chauffage,m² habitable,93.0,standard,1967,7850.0
+CH002,peinture_sols,m² habitable,135.0,standard,1974,8780.0
+CH002,electricite,m² habitable,135.0,standard,1974,9490.0
+CH002,salle_de_bain,m² SDB,8.8,standard,1974,11970.0
+CH002,cuisine,ml cuisine,3.5,standard,1974,6330.0
+CH002,toiture,m² toiture,79.0,standard,1974,19850.0
+CH002,chassis,pièce,13.0,standard,1974,12630.0
+CH003,peinture_sols,m² habitable,81.0,eco,1955,4950.0
+CH003,electricite,m² habitable,81.0,eco,1955,5620.0
+CH003,salle_de_bain,m² SDB,9.1,eco,1955,8980.0
+CH003,cuisine,ml cuisine,2.7,eco,1955,4280.0
+CH003,isolation_toiture,m² toiture,50.0,eco,1955,3000.0
+CH003,chassis,pièce,5.0,eco,1955,4330.0
+CH003,chauffage,m² habitable,81.0,eco,1955,7000.0
+CH004,peinture_sols,m² habitable,138.0,standard,1911,7520.0
+CH004,electricite,m² habitable,138.0,standard,1911,10220.0
+CH004,salle_de_bain,m² SDB,9.5,standard,1911,11770.0
+CH004,cuisine,ml cuisine,3.4,standard,1911,6520.0
+CH004,isolation_toiture,m² toiture,103.0,standard,1911,6740.0
+CH004,chauffage,m² habitable,138.0,standard,1911,9580.0
+CH005,peinture_sols,m² habitable,114.0,eco,1932,7430.0
+CH005,isolation_toiture,m² toiture,72.0,eco,1932,3960.0
+CH005,chassis,pièce,10.0,eco,1932,9630.0
+CH005,chauffage,m² habitable,114.0,eco,1932,7070.0
+CH005,isolation_facade,m² façade,67.0,eco,1932,10160.0
+CH006,peinture_sols,m² habitable,144.0,eco,2000,8420.0
+CH006,electricite,m² habitable,144.0,eco,2000,9410.0
+CH006,cuisine,ml cuisine,3.0,eco,2000,3830.0
+CH006,toiture,m² toiture,83.0,eco,2000,15310.0
+CH006,chassis,pièce,13.0,eco,2000,10300.0
+CH006,chauffage,m² habitable,144.0,eco,2000,11010.0
+CH006,isolation_facade,m² façade,117.0,eco,2000,19820.0
+CH007,peinture_sols,m² habitable,96.0,standard,1939,7720.0
+CH007,electricite,m² habitable,96.0,standard,1939,8680.0
+CH007,cuisine,ml cuisine,5.6,standard,1939,8510.0
+CH007,isolation_toiture,m² toiture,60.0,standard,1939,3900.0
+CH007,chassis,pièce,10.0,standard,1939,9040.0
+CH008,peinture_sols,m² habitable,171.0,standard,1988,10630.0
+CH008,electricite,m² habitable,171.0,standard,1988,14940.0
+CH009,peinture_sols,m² habitable,144.0,eco,1959,8700.0
+CH009,cuisine,ml cuisine,3.5,eco,1959,4460.0
+CH009,isolation_toiture,m² toiture,80.0,eco,1959,4290.0
+CH009,chassis,pièce,10.0,eco,1959,7090.0
+CH009,chauffage,m² habitable,144.0,eco,1959,9010.0
+CH010,peinture_sols,m² habitable,200.0,standard,1992,10620.0
+CH010,electricite,m² habitable,200.0,standard,1992,14340.0
+CH010,salle_de_bain,m² SDB,9.2,standard,1992,10230.0
+CH010,cuisine,ml cuisine,3.4,standard,1992,4780.0
+CH010,humidite,ml mur,32.0,standard,1992,5780.0
+CH010,isolation_toiture,m² toiture,115.0,standard,1992,5930.0
+CH010,chassis,pièce,17.0,standard,1992,16460.0
+CH010,chauffage,m² habitable,200.0,standard,1992,16000.0
+CH011,peinture_sols,m² habitable,117.0,eco,1911,5920.0
+CH011,electricite,m² habitable,117.0,eco,1911,8840.0
+CH011,salle_de_bain,m² SDB,5.1,eco,1911,10130.0
+CH011,cuisine,ml cuisine,3.4,eco,1911,5730.0
+CH011,isolation_toiture,m² toiture,77.0,eco,1911,3670.0
+CH011,chassis,pièce,8.0,eco,1911,6750.0
+CH012,peinture_sols,m² habitable,160.0,premium,1991,11660.0
+CH012,isolation_toiture,m² toiture,114.0,premium,1991,8770.0
+CH013,peinture_sols,m² habitable,134.0,standard,1931,8280.0
+CH013,electricite,m² habitable,134.0,standard,1931,11320.0
+CH013,isolation_toiture,m² toiture,83.0,standard,1931,5700.0
+CH013,chassis,pièce,10.0,standard,1931,8250.0
+CH013,chauffage,m² habitable,134.0,standard,1931,11570.0
+CH014,peinture_sols,m² habitable,160.0,eco,1973,7550.0
+CH014,isolation_toiture,m² toiture,111.0,eco,1973,6040.0
+CH014,chassis,pièce,15.0,eco,1973,9040.0
+CH014,chauffage,m² habitable,160.0,eco,1973,9870.0
+CH015,peinture_sols,m² habitable,173.0,eco,1992,8610.0
+CH015,electricite,m² habitable,173.0,eco,1992,11340.0
+CH015,salle_de_bain,m² SDB,9.6,eco,1992,9430.0
+CH015,cuisine,ml cuisine,3.8,eco,1992,6150.0
+CH015,humidite,ml mur,27.0,eco,1992,3110.0
+CH015,isolation_toiture,m² toiture,129.0,eco,1992,7140.0
+CH015,chassis,pièce,12.0,eco,1992,9620.0
+CH015,chauffage,m² habitable,173.0,eco,1992,11750.0
+CH016,peinture_sols,m² habitable,141.0,standard,1972,6480.0
+CH016,electricite,m² habitable,141.0,standard,1972,10730.0
+CH016,salle_de_bain,m² SDB,5.7,standard,1972,9190.0
+CH016,cuisine,ml cuisine,2.9,standard,1972,5060.0
+CH016,humidite,ml mur,13.0,standard,1972,2430.0
+CH016,toiture,m² toiture,79.0,standard,1972,16820.0
+CH016,isolation_facade,m² façade,27.0,standard,1972,6470.0
+CH017,peinture_sols,m² habitable,113.0,standard,1910,6720.0
+CH017,electricite,m² habitable,113.0,standard,1910,11450.0
+CH017,cuisine,ml cuisine,4.7,standard,1910,6460.0
+CH018,peinture_sols,m² habitable,98.0,eco,1966,5140.0
+CH018,electricite,m² habitable,98.0,eco,1966,6960.0
+CH018,salle_de_bain,m² SDB,4.9,eco,1966,7870.0
+CH018,cuisine,ml cuisine,3.6,eco,1966,4140.0
+CH018,humidite,ml mur,31.0,eco,1966,3690.0
+CH018,toiture,m² toiture,77.0,eco,1966,15930.0
+CH018,chauffage,m² habitable,98.0,eco,1966,7040.0
+CH019,peinture_sols,m² habitable,183.0,standard,1919,13030.0
+CH019,electricite,m² habitable,183.0,standard,1919,13130.0
+CH019,salle_de_bain,m² SDB,7.4,standard,1919,10400.0
+CH019,cuisine,ml cuisine,4.8,standard,1919,7420.0
+CH019,humidite,ml mur,19.0,standard,1919,3400.0
+CH019,isolation_toiture,m² toiture,126.0,standard,1919,6480.0
+CH019,chassis,pièce,15.0,standard,1919,19120.0
+CH020,peinture_sols,m² habitable,167.0,standard,1993,11170.0
+CH020,electricite,m² habitable,167.0,standard,1993,9920.0
+CH020,salle_de_bain,m² SDB,4.1,standard,1993,5590.0
+CH020,cuisine,ml cuisine,5.5,standard,1993,9540.0
+CH020,humidite,ml mur,15.0,standard,1993,2380.0
+CH020,isolation_toiture,m² toiture,97.0,standard,1993,4090.0
+CH020,chassis,pièce,14.0,standard,1993,17520.0
+CH020,chauffage,m² habitable,167.0,standard,1993,12130.0
+CH021,peinture_sols,m² habitable,138.0,eco,1939,7100.0
+CH021,electricite,m² habitable,138.0,eco,1939,11660.0
+CH021,salle_de_bain,m² SDB,8.5,eco,1939,10590.0
+CH021,cuisine,ml cuisine,4.1,eco,1939,5230.0
+CH021,chauffage,m² habitable,138.0,eco,1939,8140.0
+CH022,peinture_sols,m² habitable,78.0,eco,1959,4530.0
+CH022,isolation_toiture,m² toiture,52.0,eco,1959,2960.0
+CH022,chassis,pièce,6.0,eco,1959,6400.0
+CH022,chauffage,m² habitable,78.0,eco,1959,6320.0
+CH023,peinture_sols,m² habitable,94.0,standard,1959,5920.0
+CH023,electricite,m² habitable,94.0,standard,1959,7850.0
+CH023,salle_de_bain,m² SDB,8.2,standard,1959,11460.0
+CH023,cuisine,ml cuisine,5.9,standard,1959,10070.0
+CH023,humidite,ml mur,24.0,standard,1959,3570.0
+CH023,toiture,m² toiture,73.0,standard,1959,12810.0
+CH023,chassis,pièce,6.0,standard,1959,5140.0
+CH023,chauffage,m² habitable,94.0,standard,1959,7940.0
+CH024,peinture_sols,m² habitable,184.0,premium,1958,11030.0
+CH024,cuisine,ml cuisine,3.9,premium,1958,7210.0
+CH024,toiture,m² toiture,105.0,premium,1958,27240.0
+CH024,chassis,pièce,17.0,premium,1958,18300.0
+CH025,peinture_sols,m² habitable,138.0,standard,1919,8180.0
+CH025,electricite,m² habitable,138.0,standard,1919,12190.0
+CH025,salle_de_bain,m² SDB,6.4,standard,1919,9390.0
+CH025,cuisine,ml cuisine,4.9,standard,1919,6510.0
+CH025,humidite,ml mur,36.0,standard,1919,7140.0
+CH025,toiture,m² toiture,105.0,standard,1919,24620.0
+CH025,chauffage,m² habitable,138.0,standard,1919,8500.0
+CH026,peinture_sols,m² habitable,116.0,standard,1916,7190.0
+CH026,salle_de_bain,m² SDB,7.0,standard,1916,10280.0
+CH026,cuisine,ml cuisine,3.8,standard,1916,5310.0
+CH026,humidite,ml mur,16.0,standard,1916,3250.0
+CH027,peinture_sols,m² habitable,161.0,eco,1999,9070.0
+CH027,electricite,m² habitable,161.0,eco,1999,10610.0
+CH027,salle_de_bain,m² SDB,9.2,eco,1999,10860.0
+CH027,isolation_toiture,m² toiture,111.0,eco,1999,5880.0
+CH027,chassis,pièce,13.0,eco,1999,10160.0
+CH027,chauffage,m² habitable,161.0,eco,1999,10540.0
+CH028,peinture_sols,m² habitable,109.0,standard,1989,6050.0
+CH028,electricite,m² habitable,109.0,standard,1989,7690.0
+CH028,salle_de_bain,m² SDB,7.1,standard,1989,11540.0
+CH028,cuisine,ml cuisine,2.7,standard,1989,4190.0
+CH028,humidite,ml mur,22.0,standard,1989,3900.0
+CH028,toiture,m² toiture,79.0,standard,1989,16410.0
+CH028,chassis,pièce,7.0,standard,1989,7270.0
+CH028,chauffage,m² habitable,109.0,standard,1989,8670.0
+CH029,peinture_sols,m² habitable,146.0,standard,1914,10170.0
+CH029,cuisine,ml cuisine,2.7,standard,1914,4140.0
+CH029,isolation_toiture,m² toiture,106.0,standard,1914,6370.0
+CH029,chauffage,m² habitable,146.0,standard,1914,11850.0
+CH030,peinture_sols,m² habitable,133.0,standard,1918,8530.0
+CH030,humidite,ml mur,38.0,standard,1918,5460.0
+CH030,chassis,pièce,13.0,standard,1918,15110.0
+CH031,peinture_sols,m² habitable,97.0,standard,1976,6330.0
+CH031,electricite,m² habitable,97.0,standard,1976,9180.0
+CH031,salle_de_bain,m² SDB,4.8,standard,1976,7990.0
+CH031,cuisine,ml cuisine,4.9,standard,1976,7740.0
+CH031,humidite,ml mur,25.0,standard,1976,3250.0
+CH031,toiture,m² toiture,53.0,standard,1976,12980.0
+CH032,peinture_sols,m² habitable,125.0,eco,1994,5890.0
+CH032,electricite,m² habitable,125.0,eco,1994,7180.0
+CH032,salle_de_bain,m² SDB,6.4,eco,1994,8360.0
+CH032,cuisine,ml cuisine,5.0,eco,1994,7270.0
+CH032,toiture,m² toiture,92.0,eco,1994,15300.0
+CH032,chassis,pièce,11.0,eco,1994,8510.0
+CH033,peinture_sols,m² habitable,107.0,standard,1935,7040.0
+CH033,electricite,m² habitable,107.0,standard,1935,9340.0
+CH033,cuisine,ml cuisine,4.3,standard,1935,7700.0
+CH033,chassis,pièce,11.0,standard,1935,7550.0
+CH033,chauffage,m² habitable,107.0,standard,1935,9710.0
+CH034,peinture_sols,m² habitable,113.0,standard,1980,7880.0
+CH034,salle_de_bain,m² SDB,9.6,standard,1980,11880.0
+CH034,isolation_toiture,m² toiture,68.0,standard,1980,4260.0
+CH035,peinture_sols,m² habitable,125.0,eco,1965,5780.0
+CH035,electricite,m² habitable,125.0,eco,1965,8920.0
+CH035,salle_de_bain,m² SDB,7.9,eco,1965,7380.0
+CH035,cuisine,ml cuisine,2.9,eco,1965,4230.0
+CH035,humidite,ml mur,19.0,eco,1965,2590.0
+CH035,toiture,m² toiture,96.0,eco,1965,18950.0
+CH035,chassis,pièce,8.0,eco,1965,5730.0
+CH035,chauffage,m² habitable,125.0,eco,1965,7110.0
+CH035,isolation_facade,m² façade,69.0,eco,1965,11480.0
+CH036,peinture_sols,m² habitable,112.0,eco,1982,7160.0
+CH036,electricite,m² habitable,112.0,eco,1982,6930.0
+CH036,salle_de_bain,m² SDB,4.7,eco,1982,6370.0
+CH036,cuisine,ml cuisine,2.9,eco,1982,4270.0
+CH036,toiture,m² toiture,85.0,eco,1982,15150.0
+CH036,chassis,pièce,10.0,eco,1982,8630.0
+CH037,peinture_sols,m² habitable,154.0,eco,1992,7950.0
+CH037,electricite,m² habitable,154.0,eco,1992,9790.0
+CH037,isolation_toiture,m² toiture,121.0,eco,1992,6990.0
+CH037,chassis,pièce,15.0,eco,1992,12350.0
+CH037,chauffage,m² habitable,154.0,eco,1992,9970.0
+CH038,peinture_sols,m² habitable,122.0,standard,1911,6860.0
+CH038,cuisine,ml cuisine,2.7,standard,1911,5590.0
+CH038,isolation_toiture,m² toiture,91.0,standard,1911,7210.0
+CH038,chassis,pièce,8.0,standard,1911,8090.0
+CH038,chauffage,m² habitable,122.0,standard,1911,12100.0
+CH039,peinture_sols,m² habitable,94.0,eco,1915,4500.0
+CH039,electricite,m² habitable,94.0,eco,1915,7500.0
+CH039,salle_de_bain,m² SDB,9.7,eco,1915,9430.0
+CH039,cuisine,ml cuisine,3.1,eco,1915,4850.0
+CH039,humidite,ml mur,35.0,eco,1915,5270.0
+CH039,isolation_toiture,m² toiture,62.0,eco,1915,3460.0
+CH039,chassis,pièce,9.0,eco,1915,7860.0
+CH039,chauffage,m² habitable,94.0,eco,1915,7080.0
+CH040,peinture_sols,m² habitable,151.0,standard,1937,10360.0
+CH040,electricite,m² habitable,151.0,standard,1937,11900.0
+CH040,cuisine,ml cuisine,4.8,standard,1937,7600.0
+CH040,isolation_toiture,m² toiture,95.0,standard,1937,6810.0
+CH040,chassis,pièce,11.0,standard,1937,8530.0
+CH040,chauffage,m² habitable,151.0,standard,1937,10000.0
+CH040,isolation_facade,m² façade,39.0,standard,1937,8710.0
+CH041,peinture_sols,m² habitable,114.0,standard,1974,6640.0
+CH041,cuisine,ml cuisine,5.6,standard,1974,9250.0
+CH041,isolation_toiture,m² toiture,75.0,standard,1974,5090.0
+CH041,chassis,pièce,12.0,standard,1974,10080.0
+CH041,chauffage,m² habitable,114.0,standard,1974,10260.0
+CH041,isolation_facade,m² façade,81.0,standard,1974,15140.0
+CH042,peinture_sols,m² habitable,99.0,standard,1988,7440.0
+CH042,electricite,m² habitable,99.0,standard,1988,7510.0
+CH042,salle_de_bain,m² SDB,9.2,standard,1988,11290.0
+CH042,cuisine,ml cuisine,2.5,standard,1988,3960.0
+CH042,humidite,ml mur,34.0,standard,1988,5800.0
+CH042,isolation_toiture,m² toiture,58.0,standard,1988,3600.0
+CH042,chassis,pièce,9.0,standard,1988,8370.0
+CH042,chauffage,m² habitable,99.0,standard,1988,6980.0
+CH043,peinture_sols,m² habitable,131.0,eco,1973,6810.0
+CH043,salle_de_bain,m² SDB,8.1,eco,1973,9640.0
+CH043,isolation_toiture,m² toiture,105.0,eco,1973,6180.0
+CH043,chassis,pièce,9.0,eco,1973,7760.0
+CH043,chauffage,m² habitable,131.0,eco,1973,9450.0
+CH044,peinture_sols,m² habitable,158.0,standard,1913,11420.0
+CH044,electricite,m² habitable,158.0,standard,1913,12400.0
+CH044,salle_de_bain,m² SDB,7.2,standard,1913,9510.0
+CH044,cuisine,ml cuisine,2.7,standard,1913,4740.0
+CH044,isolation_toiture,m² toiture,104.0,standard,1913,6050.0
+CH044,chassis,pièce,11.0,standard,1913,10070.0
+CH044,chauffage,m² habitable,158.0,standard,1913,14430.0
+CH045,peinture_sols,m² habitable,117.0,eco,1980,6160.0
+CH045,salle_de_bain,m² SDB,4.7,eco,1980,6930.0
+CH045,isolation_toiture,m² toiture,70.0,eco,1980,4180.0
+CH045,chassis,pièce,8.0,eco,1980,6690.0
+CH045,chauffage,m² habitable,117.0,eco,1980,8840.0
+CH046,peinture_sols,m² habitable,108.0,premium,1931,8470.0
+CH046,electricite,m² habitable,108.0,premium,1931,10210.0
+CH046,cuisine,ml cuisine,4.2,premium,1931,8060.0
+CH046,isolation_toiture,m² toiture,71.0,premium,1931,5450.0
+CH046,chassis,pièce,7.0,premium,1931,7760.0
+CH046,chauffage,m² habitable,108.0,premium,1931,11840.0
+CH046,isolation_facade,m² façade,68.0,premium,1931,17770.0
+CH047,peinture_sols,m² habitable,150.0,premium,1913,10630.0
+CH047,electricite,m² habitable,150.0,premium,1913,18490.0
+CH047,salle_de_bain,m² SDB,4.6,premium,1913,8510.0
+CH047,cuisine,ml cuisine,4.0,premium,1913,8280.0
+CH047,isolation_toiture,m² toiture,88.0,premium,1913,6170.0
+CH047,chassis,pièce,10.0,premium,1913,10900.0
+CH048,peinture_sols,m² habitable,193.0,premium,1969,12810.0
+CH048,electricite,m² habitable,193.0,premium,1969,18700.0
+CH048,salle_de_bain,m² SDB,5.9,premium,1969,10380.0
+CH049,peinture_sols,m² habitable,108.0,standard,1955,7640.0
+CH049,electricite,m² habitable,108.0,standard,1955,8590.0
+CH049,salle_de_bain,m² SDB,9.6,standard,1955,10140.0
+CH049,cuisine,ml cuisine,3.9,standard,1955,5130.0
+CH049,humidite,ml mur,24.0,standard,1955,4410.0
+CH049,toiture,m² toiture,72.0,standard,1955,17520.0
+CH049,chauffage,m² habitable,108.0,standard,1955,8120.0
+CH050,peinture_sols,m² habitable,148.0,standard,1913,8970.0
+CH050,electricite,m² habitable,148.0,standard,1913,12790.0
+CH050,salle_de_bain,m² SDB,7.5,standard,1913,11060.0
+CH050,cuisine,ml cuisine,2.6,standard,1913,5610.0
+CH050,chauffage,m² habitable,148.0,standard,1913,11690.0
+CH051,peinture_sols,m² habitable,70.0,standard,1950,4300.0
+CH051,electricite,m² habitable,70.0,standard,1950,5270.0
+CH051,salle_de_bain,m² SDB,7.6,standard,1950,10670.0
+CH051,cuisine,ml cuisine,3.8,standard,1950,4460.0
+CH051,humidite,ml mur,34.0,standard,1950,5340.0
+CH051,isolation_toiture,m² toiture,48.0,standard,1950,2330.0
+CH051,chassis,pièce,7.0,standard,1950,6030.0
+CH052,peinture_sols,m² habitable,114.0,standard,1979,7940.0
+CH052,electricite,m² habitable,114.0,standard,1979,9230.0
+CH052,salle_de_bain,m² SDB,5.3,standard,1979,8180.0
+CH052,cuisine,ml cuisine,3.2,standard,1979,4260.0
+CH052,toiture,m² toiture,65.0,standard,1979,17220.0
+CH052,chassis,pièce,8.0,standard,1979,7950.0
+CH053,peinture_sols,m² habitable,139.0,standard,1993,7230.0
+CH053,electricite,m² habitable,139.0,standard,1993,10990.0
+CH053,salle_de_bain,m² SDB,9.0,standard,1993,12690.0
+CH053,cuisine,ml cuisine,4.4,standard,1993,6380.0
+CH053,humidite,ml mur,27.0,standard,1993,3920.0
+CH053,toiture,m² toiture,92.0,standard,1993,23330.0
+CH053,chauffage,m² habitable,139.0,standard,1993,8330.0
+CH054,peinture_sols,m² habitable,113.0,standard,1996,8130.0
+CH054,salle_de_bain,m² SDB,6.9,standard,1996,9530.0
+CH054,humidite,ml mur,22.0,standard,1996,2790.0
+CH054,isolation_toiture,m² toiture,73.0,standard,1996,5240.0
+CH055,peinture_sols,m² habitable,97.0,eco,1965,5670.0
+CH055,electricite,m² habitable,97.0,eco,1965,6840.0
+CH055,salle_de_bain,m² SDB,7.2,eco,1965,8660.0
+CH055,toiture,m² toiture,58.0,eco,1965,11400.0
+CH055,chassis,pièce,6.0,eco,1965,6550.0
+CH055,chauffage,m² habitable,97.0,eco,1965,5890.0
+CH056,peinture_sols,m² habitable,99.0,standard,1939,5870.0
+CH056,electricite,m² habitable,99.0,standard,1939,7860.0
+CH056,salle_de_bain,m² SDB,7.0,standard,1939,10800.0
+CH056,cuisine,ml cuisine,4.3,standard,1939,6320.0
+CH056,isolation_toiture,m² toiture,79.0,standard,1939,4170.0
+CH056,chassis,pièce,7.0,standard,1939,7780.0
+CH056,chauffage,m² habitable,99.0,standard,1939,8200.0
+CH057,peinture_sols,m² habitable,168.0,premium,1910,13750.0
+CH057,electricite,m² habitable,168.0,premium,1910,19170.0
+CH057,salle_de_bain,m² SDB,9.8,premium,1910,15160.0
+CH057,cuisine,ml cuisine,4.0,premium,1910,8870.0
+CH058,peinture_sols,m² habitable,86.0,eco,1935,5000.0
+CH058,electricite,m² habitable,86.0,eco,1935,6900.0
+CH058,salle_de_bain,m² SDB,8.2,eco,1935,9070.0
+CH058,cuisine,ml cuisine,3.8,eco,1935,4370.0
+CH058,humidite,ml mur,14.0,eco,1935,2480.0
+CH058,isolation_toiture,m² toiture,54.0,eco,1935,2940.0
+CH058,chassis,pièce,8.0,eco,1935,5760.0
+CH058,chauffage,m² habitable,86.0,eco,1935,6730.0
+CH059,peinture_sols,m² habitable,134.0,eco,1977,7730.0
+CH059,electricite,m² habitable,134.0,eco,1977,6830.0
+CH059,salle_de_bain,m² SDB,5.4,eco,1977,7320.0
+CH059,cuisine,ml cuisine,5.8,eco,1977,8420.0
+CH059,humidite,ml mur,29.0,eco,1977,2880.0
+CH059,isolation_toiture,m² toiture,107.0,eco,1977,3900.0
+CH059,chassis,pièce,11.0,eco,1977,8640.0
+CH059,chauffage,m² habitable,134.0,eco,1977,8100.0
+CH060,peinture_sols,m² habitable,160.0,standard,1954,9880.0
+CH060,electricite,m² habitable,160.0,standard,1954,11750.0
+CH060,salle_de_bain,m² SDB,7.6,standard,1954,10300.0
+CH060,cuisine,ml cuisine,3.7,standard,1954,5390.0
+CH061,peinture_sols,m² habitable,77.0,standard,1987,4380.0
+CH061,electricite,m² habitable,77.0,standard,1987,6630.0
+CH061,cuisine,ml cuisine,4.0,standard,1987,5210.0
+CH061,chauffage,m² habitable,77.0,standard,1987,7490.0
+CH062,peinture_sols,m² habitable,135.0,standard,1983,7310.0
+CH062,electricite,m² habitable,135.0,standard,1983,9730.0
+CH062,salle_de_bain,m² SDB,6.9,standard,1983,8360.0
+CH062,cuisine,ml cuisine,4.7,standard,1983,6540.0
+CH062,toiture,m² toiture,107.0,standard,1983,25230.0
+CH062,chauffage,m² habitable,135.0,standard,1983,10470.0
+CH063,peinture_sols,m² habitable,92.0,eco,1919,5570.0
+CH063,electricite,m² habitable,92.0,eco,1919,9920.0
+CH063,isolation_toiture,m² toiture,70.0,eco,1919,3840.0
+CH063,chassis,pièce,7.0,eco,1919,5280.0
+CH063,chauffage,m² habitable,92.0,eco,1919,7790.0
+CH064,peinture_sols,m² habitable,160.0,eco,1991,7960.0
+CH064,electricite,m² habitable,160.0,eco,1991,8480.0
+CH064,salle_de_bain,m² SDB,8.9,eco,1991,7570.0
+CH064,cuisine,ml cuisine,2.9,eco,1991,3540.0
+CH064,humidite,ml mur,25.0,eco,1991,3180.0
+CH065,peinture_sols,m² habitable,119.0,standard,1992,8470.0
+CH065,electricite,m² habitable,119.0,standard,1992,8490.0
+CH065,salle_de_bain,m² SDB,6.5,standard,1992,9500.0
+CH065,chassis,pièce,8.0,standard,1992,7080.0
+CH066,peinture_sols,m² habitable,77.0,standard,1932,5450.0
+CH066,electricite,m² habitable,77.0,standard,1932,7040.0
+CH066,salle_de_bain,m² SDB,9.7,standard,1932,12510.0
+CH066,cuisine,ml cuisine,5.1,standard,1932,7480.0
+CH066,isolation_toiture,m² toiture,59.0,standard,1932,3510.0
+CH066,chassis,pièce,5.0,standard,1932,5250.0
+CH066,chauffage,m² habitable,77.0,standard,1932,7410.0
+CH067,peinture_sols,m² habitable,72.0,standard,1999,4220.0
+CH067,isolation_toiture,m² toiture,56.0,standard,1999,3340.0
+CH067,chassis,pièce,8.0,standard,1999,8280.0
+CH067,chauffage,m² habitable,72.0,standard,1999,6170.0
+CH067,isolation_facade,m² façade,40.0,standard,1999,7100.0
+CH068,peinture_sols,m² habitable,182.0,standard,1915,11500.0
+CH068,isolation_toiture,m² toiture,107.0,standard,1915,7620.0
+CH068,chassis,pièce,16.0,standard,1915,12730.0
+CH068,chauffage,m² habitable,182.0,standard,1915,13870.0
+CH069,peinture_sols,m² habitable,107.0,premium,1937,8140.0
+CH069,electricite,m² habitable,107.0,premium,1937,10240.0
+CH069,salle_de_bain,m² SDB,6.7,premium,1937,12510.0
+CH069,cuisine,ml cuisine,2.8,premium,1937,6720.0
+CH069,humidite,ml mur,23.0,premium,1937,7170.0
+CH069,toiture,m² toiture,65.0,premium,1937,20530.0
+CH069,chassis,pièce,9.0,premium,1937,10840.0
+CH070,peinture_sols,m² habitable,176.0,standard,1994,11840.0
+CH070,electricite,m² habitable,176.0,standard,1994,10600.0
+CH070,salle_de_bain,m² SDB,4.0,standard,1994,7230.0
+CH070,cuisine,ml cuisine,5.2,standard,1994,6200.0
+CH070,isolation_toiture,m² toiture,98.0,standard,1994,5660.0
+CH070,chauffage,m² habitable,176.0,standard,1994,11710.0
+CH071,peinture_sols,m² habitable,123.0,eco,1974,6960.0
+CH071,isolation_toiture,m² toiture,98.0,eco,1974,5310.0
+CH071,chassis,pièce,11.0,eco,1974,8570.0
+CH071,chauffage,m² habitable,123.0,eco,1974,6290.0
+CH072,peinture_sols,m² habitable,144.0,premium,1939,10270.0
+CH072,salle_de_bain,m² SDB,6.0,premium,1939,11830.0
+CH072,cuisine,ml cuisine,3.2,premium,1939,5580.0
+CH072,isolation_toiture,m² toiture,95.0,premium,1939,5600.0
+CH073,peinture_sols,m² habitable,91.0,eco,1931,5860.0
+CH073,electricite,m² habitable,91.0,eco,1931,7180.0
+CH073,salle_de_bain,m² SDB,4.1,eco,1931,6180.0
+CH073,cuisine,ml cuisine,5.7,eco,1931,6780.0
+CH073,toiture,m² toiture,53.0,eco,1931,13600.0
+CH073,chassis,pièce,10.0,eco,1931,7500.0
+CH074,peinture_sols,m² habitable,93.0,eco,1939,5970.0
+CH074,electricite,m² habitable,93.0,eco,1939,6420.0
+CH074,salle_de_bain,m² SDB,7.6,eco,1939,7300.0
+CH074,cuisine,ml cuisine,2.6,eco,1939,3660.0
+CH074,isolation_toiture,m² toiture,62.0,eco,1939,3510.0
+CH075,peinture_sols,m² habitable,108.0,premium,1986,7820.0
+CH075,electricite,m² habitable,108.0,premium,1986,12040.0
+CH075,salle_de_bain,m² SDB,4.9,premium,1986,8280.0
+CH075,cuisine,ml cuisine,2.8,premium,1986,6870.0
+CH075,toiture,m² toiture,82.0,premium,1986,27050.0
+CH076,peinture_sols,m² habitable,89.0,eco,1965,4900.0
+CH076,salle_de_bain,m² SDB,8.2,eco,1965,7330.0
+CH076,cuisine,ml cuisine,3.0,eco,1965,3490.0
+CH076,chassis,pièce,8.0,eco,1965,5870.0
+CH077,peinture_sols,m² habitable,185.0,standard,1935,12210.0
+CH077,isolation_toiture,m² toiture,115.0,standard,1935,6750.0
+CH077,chassis,pièce,14.0,standard,1935,14410.0
+CH077,chauffage,m² habitable,185.0,standard,1935,12580.0
+CH078,peinture_sols,m² habitable,128.0,eco,1933,6350.0
+CH078,salle_de_bain,m² SDB,4.6,eco,1933,7110.0
+CH078,isolation_toiture,m² toiture,101.0,eco,1933,5290.0
+CH078,chassis,pièce,13.0,eco,1933,10480.0
+CH078,chauffage,m² habitable,128.0,eco,1933,9130.0
+CH079,peinture_sols,m² habitable,122.0,standard,2002,7500.0
+CH079,electricite,m² habitable,122.0,standard,2002,11410.0
+CH079,cuisine,ml cuisine,3.4,standard,2002,5560.0
+CH079,isolation_toiture,m² toiture,70.0,standard,2002,4660.0
+CH080,peinture_sols,m² habitable,101.0,eco,1959,6090.0
+CH080,electricite,m² habitable,101.0,eco,1959,6080.0
+CH080,salle_de_bain,m² SDB,5.6,eco,1959,8170.0
+CH080,humidite,ml mur,20.0,eco,1959,3420.0
+CH080,isolation_toiture,m² toiture,67.0,eco,1959,3010.0
+CH080,chassis,pièce,8.0,eco,1959,5810.0
+CH080,chauffage,m² habitable,101.0,eco,1959,7860.0
+CH081,peinture_sols,m² habitable,91.0,standard,1952,5590.0
+CH081,electricite,m² habitable,91.0,standard,1952,7260.0
+CH081,salle_de_bain,m² SDB,7.7,standard,1952,10660.0
+CH081,cuisine,ml cuisine,5.7,standard,1952,8150.0
+CH081,toiture,m² toiture,51.0,standard,1952,10730.0
+CH081,chassis,pièce,7.0,standard,1952,5360.0
+CH081,chauffage,m² habitable,91.0,standard,1952,7840.0
+CH082,peinture_sols,m² habitable,86.0,eco,1930,5320.0
+CH082,electricite,m² habitable,86.0,eco,1930,6730.0
+CH082,isolation_toiture,m² toiture,57.0,eco,1930,3130.0
+CH082,chassis,pièce,6.0,eco,1930,5510.0
+CH083,peinture_sols,m² habitable,70.0,eco,1978,4190.0
+CH083,electricite,m² habitable,70.0,eco,1978,4990.0
+CH083,salle_de_bain,m² SDB,9.3,eco,1978,10590.0
+CH083,cuisine,ml cuisine,5.6,eco,1978,7670.0
+CH083,humidite,ml mur,20.0,eco,1978,2730.0
+CH083,toiture,m² toiture,46.0,eco,1978,10030.0
+CH083,chassis,pièce,7.0,eco,1978,5760.0
+CH084,peinture_sols,m² habitable,109.0,standard,1976,7120.0
+CH084,electricite,m² habitable,109.0,standard,1976,7870.0
+CH084,salle_de_bain,m² SDB,4.4,standard,1976,6610.0
+CH084,cuisine,ml cuisine,5.4,standard,1976,7640.0
+CH084,humidite,ml mur,25.0,standard,1976,3770.0
+CH084,isolation_toiture,m² toiture,78.0,standard,1976,4330.0
+CH084,chassis,pièce,11.0,standard,1976,9140.0
+CH084,isolation_facade,m² façade,94.0,standard,1976,18310.0
+CH085,peinture_sols,m² habitable,145.0,standard,1913,8890.0
+CH085,electricite,m² habitable,145.0,standard,1913,10390.0
+CH085,cuisine,ml cuisine,5.6,standard,1913,8270.0
+CH085,humidite,ml mur,31.0,standard,1913,5520.0
+CH085,chassis,pièce,14.0,standard,1913,14080.0
+CH085,chauffage,m² habitable,145.0,standard,1913,10570.0
+CH086,peinture_sols,m² habitable,70.0,standard,1968,4530.0
+CH086,electricite,m² habitable,70.0,standard,1968,5490.0
+CH086,salle_de_bain,m² SDB,7.2,standard,1968,9990.0
+CH086,cuisine,ml cuisine,3.8,standard,1968,6520.0
+CH086,humidite,ml mur,39.0,standard,1968,5290.0
+CH086,toiture,m² toiture,54.0,standard,1968,14020.0
+CH086,chassis,pièce,4.0,standard,1968,4410.0
+CH086,chauffage,m² habitable,70.0,standard,1968,6790.0
+CH087,peinture_sols,m² habitable,163.0,standard,1956,12690.0
+CH087,electricite,m² habitable,163.0,standard,1956,12500.0
+CH087,salle_de_bain,m² SDB,6.5,standard,1956,8350.0
+CH087,cuisine,ml cuisine,3.7,standard,1956,7180.0
+CH087,chassis,pièce,15.0,standard,1956,12530.0
+CH087,chauffage,m² habitable,163.0,standard,1956,10000.0
+CH088,peinture_sols,m² habitable,97.0,standard,2003,6950.0
+CH088,electricite,m² habitable,97.0,standard,2003,6770.0
+CH088,salle_de_bain,m² SDB,7.1,standard,2003,10400.0
+CH088,cuisine,ml cuisine,4.6,standard,2003,7500.0
+CH088,humidite,ml mur,40.0,standard,2003,5100.0
+CH088,chauffage,m² habitable,97.0,standard,2003,8500.0
+CH089,peinture_sols,m² habitable,139.0,premium,1911,12860.0
+CH089,electricite,m² habitable,139.0,premium,1911,14510.0
+CH089,cuisine,ml cuisine,5.4,premium,1911,10310.0
+CH089,isolation_toiture,m² toiture,91.0,premium,1911,7190.0
+CH089,chassis,pièce,11.0,premium,1911,17090.0
+CH089,chauffage,m² habitable,139.0,premium,1911,15120.0
+CH090,peinture_sols,m² habitable,138.0,eco,1974,9000.0
+CH090,salle_de_bain,m² SDB,7.0,eco,1974,9920.0
+CH090,cuisine,ml cuisine,3.0,eco,1974,4790.0
+CH090,humidite,ml mur,12.0,eco,1974,2240.0
+CH090,isolation_toiture,m² toiture,106.0,eco,1974,5710.0
+CH091,peinture_sols,m² habitable,137.0,standard,1956,8300.0
+CH091,salle_de_bain,m² SDB,4.3,standard,1956,7370.0
+CH091,isolation_toiture,m² toiture,109.0,standard,1956,7180.0
+CH091,chauffage,m² habitable,137.0,standard,1956,11530.0
+CH092,peinture_sols,m² habitable,169.0,premium,1935,13490.0
+CH092,electricite,m² habitable,169.0,premium,1935,17850.0
+CH092,salle_de_bain,m² SDB,6.0,premium,1935,14260.0
+CH093,peinture_sols,m² habitable,114.0,standard,1956,7110.0
+CH093,electricite,m² habitable,114.0,standard,1956,8820.0
+CH093,salle_de_bain,m² SDB,9.0,standard,1956,13190.0
+CH093,cuisine,ml cuisine,4.6,standard,1956,6600.0
+CH093,toiture,m² toiture,83.0,standard,1956,17740.0
+CH093,chauffage,m² habitable,114.0,standard,1956,7530.0
+CH094,peinture_sols,m² habitable,158.0,standard,1999,8550.0
+CH094,electricite,m² habitable,158.0,standard,1999,9660.0
+CH094,salle_de_bain,m² SDB,5.6,standard,1999,8240.0
+CH094,cuisine,ml cuisine,5.6,standard,1999,7710.0
+CH095,peinture_sols,m² habitable,73.0,standard,1975,4810.0
+CH095,salle_de_bain,m² SDB,5.4,standard,1975,7000.0
+CH095,cuisine,ml cuisine,3.7,standard,1975,5260.0
+CH095,humidite,ml mur,22.0,standard,1975,3340.0
+CH095,toiture,m² toiture,55.0,standard,1975,12000.0
+CH095,chassis,pièce,6.0,standard,1975,6100.0
+CH095,chauffage,m² habitable,73.0,standard,1975,8210.0
+CH096,peinture_sols,m² habitable,142.0,eco,1939,7150.0
+CH096,electricite,m² habitable,142.0,eco,1939,8040.0
+CH096,salle_de_bain,m² SDB,4.6,eco,1939,5830.0
+CH096,cuisine,ml cuisine,5.4,eco,1939,6660.0
+CH096,humidite,ml mur,17.0,eco,1939,2550.0
+CH096,isolation_toiture,m² toiture,86.0,eco,1939,4220.0
+CH096,chassis,pièce,12.0,eco,1939,11260.0
+CH096,chauffage,m² habitable,142.0,eco,1939,10040.0
+CH097,peinture_sols,m² habitable,112.0,standard,1991,7710.0
+CH097,electricite,m² habitable,112.0,standard,1991,10360.0
+CH097,salle_de_bain,m² SDB,5.5,standard,1991,8740.0
+CH097,cuisine,ml cuisine,3.8,standard,1991,6680.0
+CH097,humidite,ml mur,15.0,standard,1991,2850.0
+CH097,toiture,m² toiture,70.0,standard,1991,18810.0
+CH097,chassis,pièce,10.0,standard,1991,12390.0
+CH098,peinture_sols,m² habitable,108.0,eco,1916,6110.0
+CH098,electricite,m² habitable,108.0,eco,1916,7420.0
+CH098,salle_de_bain,m² SDB,8.5,eco,1916,12190.0
+CH098,cuisine,ml cuisine,4.4,eco,1916,4690.0
+CH098,humidite,ml mur,31.0,eco,1916,5470.0
+CH098,toiture,m² toiture,63.0,eco,1916,15070.0
+CH098,chassis,pièce,9.0,eco,1916,7120.0
+CH099,peinture_sols,m² habitable,145.0,standard,1938,9760.0
+CH099,chassis,pièce,10.0,standard,1938,9980.0
+CH100,peinture_sols,m² habitable,123.0,standard,1916,8290.0
+CH100,salle_de_bain,m² SDB,9.3,standard,1916,15150.0
+CH100,cuisine,ml cuisine,3.3,standard,1916,6260.0
+CH100,toiture,m² toiture,85.0,standard,1916,21970.0
+CH100,chassis,pièce,9.0,standard,1916,9070.0
+CH101,peinture_sols,m² habitable,193.0,standard,1953,11530.0
+CH101,salle_de_bain,m² SDB,8.4,standard,1953,11830.0
+CH101,isolation_toiture,m² toiture,138.0,standard,1953,7320.0
+CH101,chassis,pièce,17.0,standard,1953,20470.0
+CH102,peinture_sols,m² habitable,76.0,eco,1989,3470.0
+CH102,electricite,m² habitable,76.0,eco,1989,6040.0
+CH102,salle_de_bain,m² SDB,6.7,eco,1989,7870.0
+CH102,cuisine,ml cuisine,4.2,eco,1989,5120.0
+CH102,humidite,ml mur,25.0,eco,1989,3610.0
+CH102,toiture,m² toiture,57.0,eco,1989,14410.0
+CH102,chauffage,m² habitable,76.0,eco,1989,5810.0
+CH103,peinture_sols,m² habitable,171.0,eco,1956,8340.0
+CH103,electricite,m² habitable,171.0,eco,1956,10450.0
+CH103,salle_de_bain,m² SDB,9.2,eco,1956,9670.0
+CH103,cuisine,ml cuisine,4.4,eco,1956,5700.0
+CH103,humidite,ml mur,34.0,eco,1956,3700.0
+CH103,chauffage,m² habitable,171.0,eco,1956,11830.0
+CH104,peinture_sols,m² habitable,109.0,eco,2003,5540.0
+CH104,electricite,m² habitable,109.0,eco,2003,6150.0
+CH104,humidite,ml mur,34.0,eco,2003,4210.0
+CH104,isolation_toiture,m² toiture,71.0,eco,2003,3620.0
+CH104,chauffage,m² habitable,109.0,eco,2003,7550.0
+CH105,peinture_sols,m² habitable,145.0,standard,1935,7460.0
+CH105,salle_de_bain,m² SDB,4.2,standard,1935,8820.0
+CH105,isolation_toiture,m² toiture,106.0,standard,1935,5430.0
+CH105,chauffage,m² habitable,145.0,standard,1935,9760.0
+CH106,peinture_sols,m² habitable,166.0,premium,1973,12340.0
+CH106,electricite,m² habitable,166.0,premium,1973,16720.0
+CH106,salle_de_bain,m² SDB,8.5,premium,1973,12540.0
+CH106,chauffage,m² habitable,166.0,premium,1973,14100.0
+CH107,peinture_sols,m² habitable,128.0,standard,1917,10130.0
+CH107,electricite,m² habitable,128.0,standard,1917,10220.0
+CH107,salle_de_bain,m² SDB,7.8,standard,1917,10800.0
+CH107,cuisine,ml cuisine,4.9,standard,1917,7170.0
+CH107,chassis,pièce,10.0,standard,1917,11230.0
+CH108,peinture_sols,m² habitable,144.0,eco,1936,8400.0
+CH108,electricite,m² habitable,144.0,eco,1936,10570.0
+CH108,humidite,ml mur,30.0,eco,1936,4780.0
+CH108,toiture,m² toiture,114.0,eco,1936,19480.0
+CH108,chassis,pièce,14.0,eco,1936,12390.0
+CH109,peinture_sols,m² habitable,104.0,standard,1938,6320.0
+CH109,cuisine,ml cuisine,4.6,standard,1938,7980.0
+CH109,toiture,m² toiture,59.0,standard,1938,15910.0
+CH109,chassis,pièce,10.0,standard,1938,9440.0
+CH109,chauffage,m² habitable,104.0,standard,1938,8500.0
+CH110,peinture_sols,m² habitable,169.0,standard,1989,10230.0
+CH110,electricite,m² habitable,169.0,standard,1989,15360.0
+CH110,salle_de_bain,m² SDB,6.7,standard,1989,10030.0
+CH110,cuisine,ml cuisine,3.4,standard,1989,5210.0
+CH110,humidite,ml mur,17.0,standard,1989,2720.0
+CH110,toiture,m² toiture,110.0,standard,1989,22980.0
+CH110,chassis,pièce,14.0,standard,1989,12290.0
+CH110,chauffage,m² habitable,169.0,standard,1989,9740.0
+CH111,peinture_sols,m² habitable,147.0,eco,1934,8410.0
+CH111,electricite,m² habitable,147.0,eco,1934,10200.0
+CH111,cuisine,ml cuisine,5.8,eco,1934,7390.0
+CH111,isolation_toiture,m² toiture,117.0,eco,1934,5950.0
+CH111,chauffage,m² habitable,147.0,eco,1934,9280.0
+CH112,peinture_sols,m² habitable,146.0,standard,1974,7940.0
+CH112,electricite,m² habitable,146.0,standard,1974,9210.0
+CH112,salle_de_bain,m² SDB,8.1,standard,1974,10100.0
+CH112,humidite,ml mur,21.0,standard,1974,2910.0
+CH112,chassis,pièce,12.0,standard,1974,9720.0
+CH112,chauffage,m² habitable,146.0,standard,1974,11240.0
+CH113,peinture_sols,m² habitable,142.0,eco,1935,7970.0
+CH113,electricite,m² habitable,142.0,eco,1935,10670.0
+CH113,salle_de_bain,m² SDB,4.9,eco,1935,6720.0
+CH113,cuisine,ml cuisine,4.3,eco,1935,5130.0
+CH113,humidite,ml mur,15.0,eco,1935,2510.0
+CH113,toiture,m² toiture,87.0,eco,1935,17230.0
+CH114,peinture_sols,m² habitable,105.0,standard,1951,6200.0
+CH114,electricite,m² habitable,105.0,standard,1951,10440.0
+CH114,salle_de_bain,m² SDB,9.3,standard,1951,9410.0
+CH114,cuisine,ml cuisine,3.5,standard,1951,7200.0
+CH114,toiture,m² toiture,74.0,standard,1951,21550.0
+CH115,peinture_sols,m² habitable,103.0,standard,1967,5230.0
+CH115,isolation_toiture,m² toiture,59.0,standard,1967,3570.0
+CH115,chassis,pièce,11.0,standard,1967,9500.0
+CH115,chauffage,m² habitable,103.0,standard,1967,10520.0
+CH115,isolation_facade,m² façade,57.0,standard,1967,11150.0
+CH116,peinture_sols,m² habitable,131.0,eco,1932,6140.0
+CH116,electricite,m² habitable,131.0,eco,1932,9330.0
+CH116,salle_de_bain,m² SDB,8.7,eco,1932,9560.0
+CH116,cuisine,ml cuisine,3.4,eco,1932,3910.0
+CH116,humidite,ml mur,40.0,eco,1932,5040.0
+CH116,toiture,m² toiture,92.0,eco,1932,19470.0
+CH116,chassis,pièce,13.0,eco,1932,11730.0
+CH116,chauffage,m² habitable,131.0,eco,1932,8770.0
+CH117,peinture_sols,m² habitable,128.0,standard,1968,9480.0
+CH117,electricite,m² habitable,128.0,standard,1968,10090.0
+CH117,salle_de_bain,m² SDB,7.6,standard,1968,11450.0
+CH117,cuisine,ml cuisine,3.4,standard,1968,5540.0
+CH117,humidite,ml mur,21.0,standard,1968,3130.0
+CH117,toiture,m² toiture,84.0,standard,1968,16690.0
+CH118,peinture_sols,m² habitable,149.0,premium,1995,12660.0
+CH118,electricite,m² habitable,149.0,premium,1995,13060.0
+CH118,salle_de_bain,m² SDB,6.7,premium,1995,13770.0
+CH118,cuisine,ml cuisine,5.7,premium,1995,8160.0
+CH118,humidite,ml mur,39.0,premium,1995,8200.0
+CH118,toiture,m² toiture,84.0,premium,1995,22020.0
+CH118,chassis,pièce,11.0,premium,1995,13020.0
+CH118,chauffage,m² habitable,149.0,premium,1995,14620.0
+CH119,peinture_sols,m² habitable,99.0,standard,1965,6400.0
+CH119,salle_de_bain,m² SDB,5.6,standard,1965,9120.0
+CH119,cuisine,ml cuisine,3.7,standard,1965,6610.0
+CH119,isolation_toiture,m² toiture,66.0,standard,1965,4650.0
+CH119,chassis,pièce,9.0,standard,1965,7720.0
+CH119,chauffage,m² habitable,99.0,standard,1965,8380.0
+CH120,peinture_sols,m² habitable,90.0,standard,1990,5900.0
+CH120,electricite,m² habitable,90.0,standard,1990,6090.0
+CH120,salle_de_bain,m² SDB,8.3,standard,1990,13160.0
+CH120,cuisine,ml cuisine,3.1,standard,1990,5210.0
+CH120,humidite,ml mur,28.0,standard,1990,3580.0
+CH120,isolation_toiture,m² toiture,52.0,standard,1990,3180.0
+CH120,chauffage,m² habitable,90.0,standard,1990,7050.0
+CH121,peinture_sols,m² habitable,110.0,standard,1995,6060.0
+CH121,salle_de_bain,m² SDB,4.2,standard,1995,7910.0
+CH121,cuisine,ml cuisine,3.8,standard,1995,6010.0
+CH121,humidite,ml mur,25.0,standard,1995,4160.0
+CH121,isolation_toiture,m² toiture,68.0,standard,1995,3630.0
+CH121,chassis,pièce,7.0,standard,1995,6170.0
+CH121,chauffage,m² habitable,110.0,standard,1995,9210.0
+CH122,peinture_sols,m² habitable,148.0,standard,1930,9810.0
+CH122,electricite,m² habitable,148.0,standard,1930,13250.0
+CH122,salle_de_bain,m² SDB,6.5,standard,1930,10040.0
+CH122,cuisine,ml cuisine,2.7,standard,1930,4450.0
+CH122,humidite,ml mur,13.0,standard,1930,3160.0
+CH122,toiture,m² toiture,107.0,standard,1930,28040.0
+CH123,peinture_sols,m² habitable,119.0,standard,1936,7030.0
+CH123,electricite,m² habitable,119.0,standard,1936,14000.0
+CH123,salle_de_bain,m² SDB,7.1,standard,1936,8900.0
+CH123,cuisine,ml cuisine,3.1,standard,1936,5190.0
+CH123,humidite,ml mur,39.0,standard,1936,6740.0
+CH123,chassis,pièce,9.0,standard,1936,7960.0
+CH124,peinture_sols,m² habitable,98.0,standard,1931,5970.0
+CH124,electricite,m² habitable,98.0,standard,1931,9260.0
+CH124,salle_de_bain,m² SDB,4.3,standard,1931,6500.0
+CH124,cuisine,ml cuisine,4.9,standard,1931,6770.0
+CH124,humidite,ml mur,24.0,standard,1931,3590.0
+CH124,toiture,m² toiture,59.0,standard,1931,14250.0
+CH124,chassis,pièce,10.0,standard,1931,8250.0
+CH125,peinture_sols,m² habitable,156.0,standard,1971,9310.0
+CH125,salle_de_bain,m² SDB,6.5,standard,1971,8400.0
+CH125,cuisine,ml cuisine,4.0,standard,1971,6660.0
+CH125,toiture,m² toiture,114.0,standard,1971,29250.0
+CH125,chassis,pièce,13.0,standard,1971,13760.0
+CH125,chauffage,m² habitable,156.0,standard,1971,13080.0
+CH126,peinture_sols,m² habitable,75.0,eco,1911,5010.0
+CH126,electricite,m² habitable,75.0,eco,1911,6520.0
+CH126,salle_de_bain,m² SDB,4.4,eco,1911,5750.0
+CH126,cuisine,ml cuisine,2.9,eco,1911,3820.0
+CH126,humidite,ml mur,19.0,eco,1911,3110.0
+CH126,isolation_toiture,m² toiture,49.0,eco,1911,2830.0
+CH126,chassis,pièce,4.0,eco,1911,2960.0
+CH127,peinture_sols,m² habitable,130.0,eco,1955,7090.0
+CH127,electricite,m² habitable,130.0,eco,1955,6080.0
+CH127,salle_de_bain,m² SDB,7.0,eco,1955,8190.0
+CH127,cuisine,ml cuisine,5.3,eco,1955,7610.0
+CH127,humidite,ml mur,33.0,eco,1955,3960.0
+CH127,isolation_toiture,m² toiture,73.0,eco,1955,3050.0
+CH127,chauffage,m² habitable,130.0,eco,1955,7310.0
+CH128,peinture_sols,m² habitable,102.0,standard,1953,5980.0
+CH128,electricite,m² habitable,102.0,standard,1953,8760.0
+CH128,salle_de_bain,m² SDB,5.0,standard,1953,7940.0
+CH128,cuisine,ml cuisine,4.0,standard,1953,6420.0
+CH128,humidite,ml mur,37.0,standard,1953,6710.0
+CH128,chassis,pièce,10.0,standard,1953,10630.0
+CH129,peinture_sols,m² habitable,140.0,premium,1932,10740.0
+CH129,electricite,m² habitable,140.0,premium,1932,14870.0
+CH129,salle_de_bain,m² SDB,4.4,premium,1932,10830.0
+CH129,cuisine,ml cuisine,4.3,premium,1932,8930.0
+CH129,toiture,m² toiture,108.0,premium,1932,30560.0
+CH129,chassis,pièce,12.0,premium,1932,13690.0
+CH129,chauffage,m² habitable,140.0,premium,1932,13550.0
+CH129,isolation_facade,m² façade,67.0,premium,1932,13310.0
+CH130,peinture_sols,m² habitable,116.0,standard,1936,7930.0
+CH130,cuisine,ml cuisine,5.4,standard,1936,7240.0
+CH130,isolation_toiture,m² toiture,80.0,standard,1936,3540.0
+CH130,chassis,pièce,11.0,standard,1936,9650.0
+CH130,chauffage,m² habitable,116.0,standard,1936,9090.0
+CH131,peinture_sols,m² habitable,123.0,standard,1933,8560.0
+CH131,electricite,m² habitable,123.0,standard,1933,10100.0
+CH131,salle_de_bain,m² SDB,9.6,standard,1933,12800.0
+CH131,cuisine,ml cuisine,2.6,standard,1933,4800.0
+CH131,humidite,ml mur,24.0,standard,1933,3910.0
+CH131,chauffage,m² habitable,123.0,standard,1933,9920.0
+CH132,peinture_sols,m² habitable,124.0,premium,1968,8740.0
+CH133,peinture_sols,m² habitable,87.0,eco,1972,5320.0
+CH133,electricite,m² habitable,87.0,eco,1972,6180.0
+CH133,salle_de_bain,m² SDB,7.4,eco,1972,8850.0
+CH133,cuisine,ml cuisine,4.8,eco,1972,7010.0
+CH133,humidite,ml mur,27.0,eco,1972,4810.0
+CH133,toiture,m² toiture,65.0,eco,1972,13790.0
+CH134,peinture_sols,m² habitable,181.0,standard,1997,12280.0
+CH134,electricite,m² habitable,181.0,standard,1997,12750.0
+CH134,isolation_toiture,m² toiture,137.0,standard,1997,9040.0
+CH134,chassis,pièce,15.0,standard,1997,13940.0
+CH134,chauffage,m² habitable,181.0,standard,1997,10050.0
+CH135,peinture_sols,m² habitable,183.0,standard,1937,13530.0
+CH135,cuisine,ml cuisine,4.4,standard,1937,5630.0
+CH135,isolation_toiture,m² toiture,124.0,standard,1937,8350.0
+CH135,chauffage,m² habitable,183.0,standard,1937,13720.0
+CH136,peinture_sols,m² habitable,70.0,eco,1969,3820.0
+CH136,electricite,m² habitable,70.0,eco,1969,5290.0
+CH136,salle_de_bain,m² SDB,8.9,eco,1969,10060.0
+CH136,cuisine,ml cuisine,5.1,eco,1969,7370.0
+CH136,toiture,m² toiture,52.0,eco,1969,11780.0
+CH136,chassis,pièce,8.0,eco,1969,6360.0
+CH136,chauffage,m² habitable,70.0,eco,1969,7120.0
+CH137,peinture_sols,m² habitable,129.0,standard,1984,7910.0
+CH137,electricite,m² habitable,129.0,standard,1984,10700.0
+CH137,salle_de_bain,m² SDB,9.6,standard,1984,12660.0
+CH137,cuisine,ml cuisine,3.0,standard,1984,4220.0
+CH137,chassis,pièce,13.0,standard,1984,10920.0
+CH137,chauffage,m² habitable,129.0,standard,1984,11840.0
+CH137,isolation_facade,m² façade,99.0,standard,1984,15220.0
+CH138,peinture_sols,m² habitable,171.0,premium,1936,16240.0
+CH138,electricite,m² habitable,171.0,premium,1936,19670.0
+CH138,salle_de_bain,m² SDB,7.6,premium,1936,14890.0
+CH138,cuisine,ml cuisine,4.6,premium,1936,7610.0
+CH138,humidite,ml mur,35.0,premium,1936,5860.0
+CH138,toiture,m² toiture,128.0,premium,1936,37480.0
+CH138,chassis,pièce,13.0,premium,1936,14870.0
+CH138,chauffage,m² habitable,171.0,premium,1936,16120.0
+CH138,isolation_facade,m² façade,95.0,premium,1936,20440.0
+CH139,peinture_sols,m² habitable,87.0,eco,1930,5100.0
+CH139,electricite,m² habitable,87.0,eco,1930,7150.0
+CH139,salle_de_bain,m² SDB,5.4,eco,1930,8100.0
+CH139,cuisine,ml cuisine,3.2,eco,1930,4580.0
+CH139,humidite,ml mur,21.0,eco,1930,3370.0
+CH139,isolation_toiture,m² toiture,56.0,eco,1930,2690.0
+CH139,chassis,pièce,6.0,eco,1930,5140.0
+CH139,chauffage,m² habitable,87.0,eco,1930,6420.0
+CH140,peinture_sols,m² habitable,165.0,eco,1937,10510.0
+CH140,electricite,m² habitable,165.0,eco,1937,12560.0
+CH140,salle_de_bain,m² SDB,8.5,eco,1937,11090.0
+CH140,cuisine,ml cuisine,3.5,eco,1937,4520.0
+CH140,humidite,ml mur,11.0,eco,1937,1660.0
+CH140,chassis,pièce,15.0,eco,1937,13200.0
+CH140,chauffage,m² habitable,165.0,eco,1937,11760.0
+CH141,peinture_sols,m² habitable,117.0,standard,1930,6510.0
+CH141,isolation_toiture,m² toiture,77.0,standard,1930,5560.0
+CH141,chassis,pièce,12.0,standard,1930,11630.0
+CH141,chauffage,m² habitable,117.0,standard,1930,8280.0
+CH142,peinture_sols,m² habitable,122.0,eco,1987,5730.0
+CH142,electricite,m² habitable,122.0,eco,1987,8020.0
+CH142,salle_de_bain,m² SDB,9.3,eco,1987,10970.0
+CH142,cuisine,ml cuisine,3.2,eco,1987,4710.0
+CH142,toiture,m² toiture,83.0,eco,1987,13430.0
+CH142,chauffage,m² habitable,122.0,eco,1987,8080.0
+CH142,isolation_facade,m² façade,28.0,eco,1987,4470.0
+CH143,peinture_sols,m² habitable,139.0,eco,1911,6520.0
+CH143,electricite,m² habitable,139.0,eco,1911,10370.0
+CH143,isolation_toiture,m² toiture,94.0,eco,1911,5670.0
+CH143,chassis,pièce,13.0,eco,1911,10260.0
+CH144,peinture_sols,m² habitable,85.0,premium,1989,6620.0
+CH144,electricite,m² habitable,85.0,premium,1989,9290.0
+CH144,salle_de_bain,m² SDB,6.5,premium,1989,11670.0
+CH144,cuisine,ml cuisine,2.6,premium,1989,5260.0
+CH144,humidite,ml mur,19.0,premium,1989,4220.0
+CH144,toiture,m² toiture,47.0,premium,1989,15710.0
+CH144,chassis,pièce,7.0,premium,1989,8550.0
+CH145,peinture_sols,m² habitable,153.0,standard,1918,8930.0
+CH145,electricite,m² habitable,153.0,standard,1918,11890.0
+CH145,salle_de_bain,m² SDB,6.0,standard,1918,8630.0
+CH145,cuisine,ml cuisine,4.7,standard,1918,7700.0
+CH145,toiture,m² toiture,108.0,standard,1918,25370.0
+CH145,chassis,pièce,13.0,standard,1918,13590.0
+CH145,chauffage,m² habitable,153.0,standard,1918,10470.0
+CH146,peinture_sols,m² habitable,116.0,standard,1933,7480.0
+CH146,salle_de_bain,m² SDB,7.6,standard,1933,12440.0
+CH146,cuisine,ml cuisine,5.3,standard,1933,8790.0
+CH146,toiture,m² toiture,84.0,standard,1933,20140.0
+CH146,chassis,pièce,8.0,standard,1933,8100.0
+CH146,chauffage,m² habitable,116.0,standard,1933,10340.0
+CH147,peinture_sols,m² habitable,96.0,standard,1950,7320.0
+CH147,electricite,m² habitable,96.0,standard,1950,7400.0
+CH147,salle_de_bain,m² SDB,8.3,standard,1950,9460.0
+CH147,cuisine,ml cuisine,5.9,standard,1950,9240.0
+CH147,isolation_toiture,m² toiture,76.0,standard,1950,4120.0
+CH147,chauffage,m² habitable,96.0,standard,1950,9200.0
+CH148,peinture_sols,m² habitable,102.0,standard,1952,6360.0
+CH148,electricite,m² habitable,102.0,standard,1952,8310.0
+CH148,salle_de_bain,m² SDB,8.9,standard,1952,11480.0
+CH148,cuisine,ml cuisine,4.2,standard,1952,7580.0
+CH148,isolation_toiture,m² toiture,66.0,standard,1952,4030.0
+CH148,chassis,pièce,10.0,standard,1952,9130.0
+CH148,chauffage,m² habitable,102.0,standard,1952,8330.0
+CH149,peinture_sols,m² habitable,132.0,eco,1990,6920.0
+CH149,electricite,m² habitable,132.0,eco,1990,6470.0
+CH149,salle_de_bain,m² SDB,7.9,eco,1990,12870.0
+CH149,cuisine,ml cuisine,2.8,eco,1990,3750.0
+CH149,chauffage,m² habitable,132.0,eco,1990,9070.0
+CH150,peinture_sols,m² habitable,84.0,premium,1988,7040.0

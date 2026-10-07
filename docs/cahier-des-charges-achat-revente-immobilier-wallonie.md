@@ -210,6 +210,18 @@ avec `Marge_min = 30 000 €`.
 | D9 | Estimation de la **durée des travaux** (planning par poste) alimentant le portage | Must |
 | D10 | Signalement des formalités : **permis d'urbanisme** (CoDT) si modification de façade, de volume, de toiture visible ou du nombre de logements ; recours obligatoire à un architecte dans ce cas | Should |
 | D11 | Postes post-travaux obligatoires : nouveau **contrôle de l'installation électrique** (RGIE), nouveau **certificat PEB**, **DIU** (dossier d'intervention ultérieure) | Must |
+| D12 | **Modèle de régression linéaire « annonce »** : coût total des travaux estimé à partir des seules données Immoweb (surface, état, saut de classes PEB, façades, année, gamme), avec intervalle de prédiction 80 % | Must |
+| D13 | **Modèles de régression par poste** (après visite) : coût = coût fixe + quantité × prix unitaire, ajusté selon la gamme et le bâti d'avant 1945 ; ré-estimés après chaque chantier clôturé | Should |
+| D14 | La borne haute (P90) de l'intervalle de prédiction remplace le pourcentage d'imprévus fixe dans le **scénario prudent** dès que le modèle dispose d'au moins 30 chantiers réels | Should |
+
+**Régression linéaire sur les travaux** — implémentation de référence dans [`travaux/`](../travaux/README.md) :
+
+```
+Modèle annonce : Coût = β0 + β1·surface + β2·[À rénover] + β3·[À restaurer] + β4·saut_classes_PEB
+                      + β5·façades + β6·[avant 1945] + β7·[éco] + β8·[premium] + ε
+Modèle poste   : Coût_poste = coût_fixe + quantité × (prix_unitaire + ajustements gamme / bâti ancien) + ε
+```
+Indicateurs suivis : R², R² ajusté, erreur type et t de chaque coefficient, MAE et MAPE en validation croisée (5 plis). Les données d'exemple fournies sont **synthétiques** et doivent être remplacées par les devis et factures réels.
 
 **Classes PEB en Wallonie (consommation spécifique, kWh/m²/an) — pour la simulation :**
 
