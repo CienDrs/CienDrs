@@ -528,7 +528,7 @@ def page_fiche():
     rue = " ".join(x for x in (b.get("rue"), b.get("numero")) if x)
     ville = " ".join(x for x in (b.get("code_postal"), b.get("commune")) if x)
     st.caption(", ".join(x for x in (rue, ville) if x)
-               f" · {b.get('etat') or 'état ?'} · PEB {b.get('peb_lettre') or '?'} · source : {b.get('source') or '?'}"
+               + f" · {b.get('etat') or 'état ?'} · PEB {b.get('peb_lettre') or '?'} · source : {b.get('source') or '?'}"
                + (f" · [annonce]({lien})" if lien.startswith("http") else ""))
     if b.get("source") == "exemple fictif":
         st.warning("Annonce **fictive** (données d'exemple) : les chiffres ne décrivent pas le marché réel.")
