@@ -38,6 +38,7 @@ frais_fixes = 800                # PEB, contrôle électrique, attestation de so
 
 [travaux]
 duree_defaut_mois = 6
+delai_revente_mois = 3           # délai entre la fin des travaux et l'acte de revente
 supplement_par_classe_peb_m2 = 40   # €/m² par classe PEB gagnée, en plus du niveau de rénovation
 
 [travaux.niveaux]   # €/m² TVAC [bas, haut] — à calibrer avec les devis locaux
@@ -85,6 +86,23 @@ peb_classe_cible_defaut = "C"
 taux_plus_value_pp = 0.165       # plus-value sur immeuble bâti revendu dans les 5 ans
 additionnels_communaux = 0.075
 taux_isoc = 0.25
+
+[reperage]
+# Phase 1 : repérage des biens sous la valeur du marché (module R)
+reference = "mediane"            # "mediane" ou "moyenne" du prix/m² des biens similaires
+seuil = 0.20                     # GO si le prix/m² est au moins 20 % sous la référence
+rayon_km = 3                     # rayon de départ de la recherche de comparables (élargi si trop peu)
+min_comparables = 5
+
+[collecte]
+# Collecte automatique (version finale). Sources activées, dans l'ordre :
+#  - "dossier" : importe les pages d'annonces (.html) et fichiers CSV déposés dans dossier_import
+#  - "api"     : accès officiel aux données (à configurer quand un accès est obtenu)
+sources = ["dossier"]
+dossier_import = "data/import"
+intervalle_minutes = 60
+api_url = ""
+api_cle_variable = "IMMO_API_CLE"   # nom de la variable d'environnement contenant la clé
 
 [statbel]
 # Prix médians de vente par commune : téléchargés automatiquement par l'application.

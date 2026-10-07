@@ -60,3 +60,33 @@ def test_donnees_sans_import_statbel_manuel(app):
     at = app("donnees")
     assert not at.exception
     assert not any("Statbel" in (u.label or "") for u in at.get("file_uploader"))
+
+
+def test_base_de_donnees_reperage(app):
+    at = app("biens")
+    assert not at.exception, [e.value for e in at.exception]
+    assert at.title[0].value.endswith("Base de données")
+    labels = {m.label: m.value for m in at.metric}
+    assert int(labels["Biens dans la base"]) == 181
+    assert any(r.label == "Référence" for r in at.radio)
+    # le seuil change le nombre de GO
+    go_20 = int(labels["Repérés GO"])
+    next(s for s in at.slider if s.label.startswith("GO si")).set_value(5).run()
+    assert int({m.label: m.value for m in at.metric}["Repérés GO"]) > go_20
+
+
+def test_fiche_onglets_et_travaux(app):
+    at = app("fiche", bien="21894138")
+    assert not at.exception, [e.value for e in at.exception]
+    assert [t.label for t in at.tabs][:6] == ["Annonce", "Repérage et prix", "Estimation des travaux", "Rentabilité",
+                                              "Risques", "Historique"]
+    next(b for b in at.button if b.label == "Appliquer le modèle").click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    totaux = {m.label: m.value for m in at.metric}
+    assert totaux["Total TVAC"] != "0 €"
+    next(b for b in at.button if b.label.startswith("💾 Enregistrer le chantier")).click().run()
+    assert not at.exception, [e.value for e in at.exception]
+    from immo import annonces, chantier
+    import os
+    c = annonces.connecter(os.environ["IMMO_BASE"])
+    assert chantier.lire(c, "21894138")["lignes"]

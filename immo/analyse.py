@@ -4,7 +4,7 @@ import json
 import math
 from datetime import date
 
-from immo import annonces, estimation, finance, geo, parametres, statbel, travaux
+from immo import annonces, chantier, estimation, finance, geo, parametres, reperage, statbel, travaux
 
 VERSION_MODELE = "v1-comparables-ratios"
 
@@ -110,6 +110,10 @@ def analyser(con, ident, p=None, surcharges=None, aujourd_hui=None):
         "portage_mensuel": None,
         "vente_par_agence": True,
     }
+    res["chantier"] = chantier.lire(con, ident)
+    if res["chantier"] and res["chantier"].get("lignes"):
+        defaut.update(chantier.hypotheses_depuis_chantier(res["chantier"], p))
+    res["reperage"] = reperage.reperer_bien(bien, df, p)
     hyp = {**defaut, **{k: v for k, v in lire_hypotheses(con, ident).items() if v is not None},
            **{k: v for k, v in (surcharges or {}).items() if v is not None}}
     res["hypotheses"], res["hypotheses_defaut"] = hyp, defaut

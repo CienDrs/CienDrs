@@ -12,7 +12,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from immo import analyse, annonces, extraction_texte, finance, geo, parametres, statbel, travaux
+from immo import (analyse, annonces, chantier, collecte, extraction_texte, finance, geo, parametres,
+                  reperage, statbel, travaux)
 
 RACINE = Path(__file__).resolve().parent
 BASE = Path(os.environ.get("IMMO_BASE", RACINE / "data" / "annonces.sqlite"))
@@ -69,52 +70,182 @@ CODE_POSTAL_WALLON = re.compile(r"^(1[34]\d\d|[4-7]\d\d\d)$")
 
 # ------------------------------------------------------------------ page : biens
 
-def page_biens():
-    st.title("📋 Biens")
-    c = con()
+REPERAGE_ICONES = {"GO": "🟢 GO", "NO-GO": "🔴 NO-GO", "Données insuffisantes": "⚪ Données insuffisantes"}
+
+
+@st.cache_data(show_spinner="Calcul du repérage…", max_entries=8)
+def tableau_base(chemin_base, signature, reglages_json, estimation_json):
+    """Tableau de la base de données avec le repérage ; recalculé quand la base ou les réglages changent."""
+    p = {**P, "reperage": json.loads(reglages_json), "estimation": json.loads(estimation_json)}
+    c = annonces.connecter(chemin_base)
     df = annonces.tableau_annonces(c)
     if df.empty:
-        st.info("La base est vide. Ajoutez un bien (page **Ajouter un bien**) ou chargez les données d'exemple "
-                "(page **Données**).")
-        return
+        return df
+    df = df.merge(reperage.reperer_tous(df, p), on="immoweb_id", how="left")
+    ecarts = []
+    for _, b in df.iterrows():
+        e = statbel.ecart_au_median(c, b["prix_actuel"], b["code_postal"], b["commune"], b["facades"])
+        ecarts.append(e["ecart"] if e else None)
+    df["ecart_statbel"] = ecarts
+    photos = dict(c.execute("SELECT immoweb_id, url_miniature FROM photos WHERE ordre = 0"))
+    df["photo"] = df["immoweb_id"].map(photos)
     dec = pd.read_sql("SELECT immoweb_id, date, resultat FROM analyses ORDER BY date", c)
     if not dec.empty:
-        dec["décision"] = dec["resultat"].map(lambda r: (json.loads(r).get("decision") or {}).get("statut"))
-        df = df.merge(dec.groupby("immoweb_id").last()[["décision"]], left_on="immoweb_id", right_index=True,
+        dec["decision"] = dec["resultat"].map(lambda r: (json.loads(r).get("decision") or {}).get("statut"))
+        df = df.merge(dec.groupby("immoweb_id").last()[["decision"]], left_on="immoweb_id", right_index=True,
                       how="left")
     else:
-        df["décision"] = None
+        df["decision"] = None
+    c.close()
+    return df
 
-    f1, f2, f3, f4 = st.columns([2, 2, 1, 1])
-    communes = f1.multiselect("Communes", sorted(df["commune"].dropna().unique()), placeholder="Toutes")
-    etats = f2.multiselect("État", ETATS, placeholder="Tous")
-    en_ligne = f3.toggle("En ligne uniquement", value=True)
-    sans_exemples = f4.toggle("Masquer les exemples fictifs", value=False)
-    vue = df
+
+def signature_base(c):
+    return c.execute("SELECT (SELECT COUNT(*) FROM annonces), (SELECT MAX(derniere_observation) FROM annonces), "
+                     "(SELECT COUNT(*) FROM historique_prix), (SELECT COUNT(*) FROM photos), "
+                     "(SELECT COUNT(*) FROM analyses), (SELECT COUNT(*) FROM medianes_statbel), "
+                     "(SELECT GROUP_CONCAT(immoweb_id || surface_habitable || COALESCE(etat, ''), ',') "
+                     "FROM annonces)").fetchone()
+
+
+def _plage(col, label, serie, pas, fmt="%.0f"):
+    serie = pd.to_numeric(serie, errors="coerce").dropna()
+    if serie.empty:
+        return None
+    bas, haut = float(serie.min()), float(serie.max())
+    if bas == haut:
+        return None
+    return col.slider(label, bas, haut, (bas, haut), step=pas, format=fmt)
+
+
+def page_base():
+    st.title("🗃️ Base de données")
+    c = con()
+    if c.execute("SELECT COUNT(*) FROM annonces").fetchone()[0] == 0:
+        st.info("La base est vide. Ajoutez un bien (page **Ajouter un bien**), déposez des annonces dans le dossier "
+                "d'import ou chargez des annonces d'exemple (page **Données**).")
+        return
+
+    r0 = P["reperage"]
+    with st.container(border=True):
+        st.markdown("**Repérage — phase 1 : biens sous la valeur du marché**")
+        a, b, d, e = st.columns([1.2, 2, 2, 1.2])
+        reference = a.radio("Référence", ["mediane", "moyenne"], horizontal=True,
+                            index=0 if r0["reference"] == "mediane" else 1,
+                            format_func={"mediane": "Médiane", "moyenne": "Moyenne"}.get,
+                            help="Prix/m² des biens similaires, ramenés au même état que le bien.")
+        seuil = b.slider("GO si le prix/m² est sous la référence d'au moins (%)", 0, 50,
+                         int(round(r0["seuil"] * 100)), 1) / 100
+        rayon = d.slider("Rayon de départ des comparables (km)", 1.0, 10.0, float(r0["rayon_km"]), 0.5)
+        mini = e.number_input("Comparables minimum", 1, 30, int(r0["min_comparables"]))
+        reglages = {"reference": reference, "seuil": seuil, "rayon_km": rayon, "min_comparables": int(mini)}
+        if reglages != {k: r0[k] for k in reglages} and st.button("Garder ces réglages par défaut"):
+            parametres.enregistrer({"reperage": reglages})
+            st.rerun()
+
+    df = tableau_base(str(BASE), signature_base(c), json.dumps(reglages, sort_keys=True),
+                      json.dumps(P["estimation"], sort_keys=True))
+    aujourdhui = pd.Timestamp(date.today())
+    premiere = pd.to_datetime(df["date_publication"].fillna(df["premiere_observation"]), errors="coerce")
+    df["jours_depuis_publication"] = (aujourdhui - premiere).dt.days
+
+    m = st.columns(4)
+    m[0].metric("Biens dans la base", len(df))
+    m[1].metric("En ligne", int(df["en_ligne"].sum()))
+    m[2].metric("Repérés GO", int((df["reperage"] == "GO").sum()))
+    m[3].metric("Nouveaux GO (24 h)", int(((df["reperage"] == "GO") & (df["jours_depuis_publication"] <= 1)).sum()))
+
+    with st.expander("🔎 Filtres", expanded=True):
+        a, b, d, e = st.columns(4)
+        statuts = a.multiselect("Repérage", list(REPERAGE_ICONES), format_func=REPERAGE_ICONES.get, placeholder="Tous")
+        communes = b.multiselect("Communes", sorted(df["commune"].dropna().unique()), placeholder="Toutes")
+        etats = d.multiselect("État", ETATS, placeholder="Tous")
+        pebs = e.multiselect("Classe PEB", PEB, placeholder="Toutes")
+        a, b, d, e = st.columns(4)
+        prix = _plage(a, "Prix (€)", df["prix_actuel"], 5000.0)
+        pm2 = _plage(b, "Prix/m² (€)", df["prix_m2"], 50.0)
+        surface = _plage(d, "Surface habitable (m²)", df["surface_habitable"], 5.0)
+        distance = _plage(e, "Distance à Mons (km)", df["distance_mons_km"], 0.5, "%.1f")
+        a, b, d, e = st.columns(4)
+        terrain_min = a.number_input("Terrain minimum (m²)", 0, 100000, 0, 50)
+        chambres_min = b.number_input("Chambres minimum", 0, 10, 0)
+        facades = d.multiselect("Façades", [2, 3, 4], placeholder="Toutes")
+        annees = _plage(e, "Année de construction", df["annee_construction"], 1.0)
+        a, b, d, e = st.columns(4)
+        ecart_max = a.slider("Écart maximum à la référence (%)", -60, 60, 60, 1)
+        baisse = b.selectbox("Baisse de prix", ["Indifférent", "Oui", "Non"])
+        publiee = d.selectbox("Publiée depuis", ["Indifférent", "24 h", "7 jours", "30 jours"])
+        jours_min = e.number_input("En ligne depuis au moins (jours)", 0, 2000, 0)
+        a, b = st.columns(2)
+        statut_ligne = a.radio("Annonces", ["En ligne", "Retirées", "Toutes"], horizontal=True)
+        sans_exemples = b.toggle("Masquer les exemples fictifs", value=False)
+
+    v = df
+    if statuts:
+        v = v[v["reperage"].isin(statuts)]
     if communes:
-        vue = vue[vue["commune"].isin(communes)]
+        v = v[v["commune"].isin(communes)]
     if etats:
-        vue = vue[vue["etat"].isin(etats)]
-    if en_ligne:
-        vue = vue[vue["en_ligne"]]
+        v = v[v["etat"].isin(etats)]
+    if pebs:
+        v = v[v["peb_lettre"].isin(pebs)]
+    for col, plage in (("prix_actuel", prix), ("prix_m2", pm2), ("surface_habitable", surface),
+                       ("distance_mons_km", distance), ("annee_construction", annees)):
+        if plage and plage != (float(pd.to_numeric(df[col], errors="coerce").min()),
+                               float(pd.to_numeric(df[col], errors="coerce").max())):
+            v = v[pd.to_numeric(v[col], errors="coerce").between(*plage)]
+    if terrain_min:
+        v = v[v["surface_terrain"].fillna(0) >= terrain_min]
+    if chambres_min:
+        v = v[v["chambres"].fillna(0) >= chambres_min]
+    if facades:
+        v = v[v["facades"].isin(facades)]
+    if ecart_max < 60:
+        v = v[v["ecart_reference"].notna() & (v["ecart_reference"] * 100 <= ecart_max)]
+    if baisse != "Indifférent":
+        v = v[(v["nb_baisses_prix"].fillna(0) > 0) == (baisse == "Oui")]
+    if publiee != "Indifférent":
+        v = v[v["jours_depuis_publication"] <= {"24 h": 1, "7 jours": 7, "30 jours": 30}[publiee]]
+    if jours_min:
+        v = v[v["jours_en_ligne"].fillna(0) >= jours_min]
+    if statut_ligne != "Toutes":
+        v = v[v["en_ligne"] == (statut_ligne == "En ligne")]
     if sans_exemples:
-        vue = vue[vue["source"].fillna("") != "exemple fictif"]
+        v = v[v["source"].fillna("") != "exemple fictif"]
 
-    colonnes = {"immoweb_id": "Annonce", "commune": "Commune", "prix_actuel": "Prix (€)",
-                "surface_habitable": "Surface (m²)", "prix_m2": "Prix/m² (€)", "chambres": "Ch.",
-                "etat": "État", "peb_lettre": "PEB", "distance_mons_km": "Distance (km)",
-                "jours_en_ligne": "Jours en ligne", "nb_baisses_prix": "Baisses", "variation_prix_pct": "Variation (%)",
-                "en_ligne": "En ligne", "décision": "Dernière décision"}
-    tableau = vue[list(colonnes)].rename(columns=colonnes).sort_values("Prix/m² (€)")
-    st.caption(f"{len(tableau)} biens affichés sur {len(df)}. Cliquez sur une ligne pour ouvrir la fiche.")
+    colonnes = {"photo": "Photo", "reperage": "Repérage", "ecart_reference": "Écart (%)",
+                "reference_m2": "Référence (€/m²)", "n_comparables": "Comparables", "ecart_statbel": "Écart Statbel (%)",
+                "commune": "Commune", "prix_actuel": "Prix (€)", "prix_m2": "Prix/m² (€)",
+                "surface_habitable": "Surface (m²)", "surface_terrain": "Terrain (m²)", "chambres": "Ch.",
+                "facades": "Façades", "etat": "État", "peb_lettre": "PEB", "nb_baisses_prix": "Baisses",
+                "jours_en_ligne": "Jours en ligne", "date_publication": "Publiée le", "en_ligne": "En ligne",
+                "decision": "Décision rentabilité", "immoweb_id": "Annonce"}
+    t = v[list(colonnes)].copy()
+    t["reperage"] = t["reperage"].map(REPERAGE_ICONES)
+    t["ecart_reference"] = t["ecart_reference"] * 100
+    t["ecart_statbel"] = pd.to_numeric(t["ecart_statbel"], errors="coerce") * 100
+    t["ecart_reference"] = pd.to_numeric(t["ecart_reference"], errors="coerce")
+    t["photo"] = t["photo"].fillna("")
+    t["decision"] = t["decision"].fillna("")
+    t = t.rename(columns=colonnes).sort_values("Écart (%)", na_position="last")
+    a, b = st.columns([4, 1])
+    a.caption(f"{len(t)} biens affichés sur {len(df)} — cliquez sur une ligne pour ouvrir sa fiche.")
+    b.download_button("⬇️ Exporter (CSV)", t.drop(columns=["Photo"]).to_csv(index=False), "base_de_donnees.csv",
+                      "text/csv", width="stretch")
     sel = st.dataframe(
-        tableau, hide_index=True, width="stretch", on_select="rerun", selection_mode="single-row",
-        column_config={"Prix (€)": st.column_config.NumberColumn(format="%.0f"),
-                       "Prix/m² (€)": st.column_config.NumberColumn(format="%.0f"),
-                       "Variation (%)": st.column_config.NumberColumn(format="%.1f"),
-                       "Distance (km)": st.column_config.NumberColumn(format="%.1f")})
+        t, hide_index=True, width="stretch", height=560, on_select="rerun", selection_mode="single-row",
+        column_config={
+            "Photo": st.column_config.ImageColumn(width="small"),
+            "Écart (%)": st.column_config.NumberColumn(format="%+.1f",
+                                                        help="Prix/m² du bien par rapport à la référence des biens similaires"),
+            "Écart Statbel (%)": st.column_config.NumberColumn(format="%+.1f", help="Prix par rapport au prix médian Statbel de la commune"),
+            "Référence (€/m²)": st.column_config.NumberColumn(format="%.0f"),
+            "Prix (€)": st.column_config.NumberColumn(format="%.0f"),
+            "Prix/m² (€)": st.column_config.NumberColumn(format="%.0f"),
+            "Surface (m²)": st.column_config.NumberColumn(format="%.0f"),
+            "Terrain (m²)": st.column_config.NumberColumn(format="%.0f")})
     if sel.selection.rows:
-        aller_fiche(tableau.iloc[sel.selection.rows[0]]["Annonce"])
+        aller_fiche(t.iloc[sel.selection.rows[0]]["Annonce"])
 
 
 # ------------------------------------------------------------------ page : ajouter
@@ -195,6 +326,8 @@ def formulaire_verification(brouillon):
             if brouillon.get(cle) is not None:
                 champs[cle] = brouillon[cle]
         annonces.enregistrer_observation(c_, ident, prix, date.today().isoformat(), **champs)
+        if brouillon.get("photos"):
+            annonces.enregistrer_photos(c_, ident, brouillon["photos"])
         with st.spinner("Géocodage et vérification des risques…"):
             messages = geo.enrichir(c_, analyse.charger_bien(c_, ident)[0], P)
         for m in messages:
@@ -385,6 +518,10 @@ def onglet_prix(res):
 
 def onglet_operation(c, res):
     h, t = res["hypotheses"], res["travaux"]
+    if res.get("chantier") and res["chantier"].get("lignes"):
+        st.info("Travaux : repris du chantier composé dans l'onglet « Estimation des travaux » "
+                f"({eur(h['travaux'])} TVAC, imprévus {pct(h['taux_imprevus'], False)}, durée de l'opération "
+                f"{h['duree_mois']:g} mois).")
     st.markdown("**Pré-chiffrage des travaux**")
     if t.get("central"):
         st.caption(f"{t['libelle_niveau']} (état « {res['bien'].get('etat') or '?'} »), "
@@ -526,6 +663,246 @@ def onglet_donnees(c, res):
                  hide_index=True, width="stretch", height=400)
 
 
+def _valeur(v, suffixe=""):
+    if v is None or (isinstance(v, float) and pd.isna(v)) or v == "":
+        return "—"
+    if isinstance(v, bool):
+        return "oui" if v else "non"
+    if isinstance(v, float) and v.is_integer():
+        v = int(v)
+    if isinstance(v, (int, float)):
+        v = f"{v:,}".replace(",", " ")
+    return f"{v}{suffixe}"
+
+
+def _fiche_table(titre, lignes):
+    st.markdown(f"**{titre}**")
+    st.markdown("\n".join(["| | |", "|---|---|"] + [f"| {k} | {v} |" for k, v in lignes]))
+
+
+def onglet_annonce(c, res):
+    b = res["bien"]
+    photos = annonces.lire_photos(c, b["immoweb_id"])
+    if photos:
+        st.image(photos[0]["grande"], width="stretch")
+        if len(photos) > 1:
+            with st.expander(f"📷 Toutes les photos ({len(photos)})", expanded=False):
+                for i in range(0, len(photos), 4):
+                    for col, ph in zip(st.columns(4), photos[i:i + 4]):
+                        col.image(ph["miniature"], width="stretch")
+                        col.markdown(f"[agrandir]({ph['grande']})")
+        st.caption("Photos affichées depuis le site de l'annonce.")
+    else:
+        st.caption("📷 Pas de photos pour ce bien (annonce importée sans photos ou saisie manuelle).")
+    if (b.get("url") or "").startswith("http"):
+        st.link_button("Voir l'annonce d'origine", b["url"])
+
+    a, d = st.columns(2)
+    with a:
+        _fiche_table("Prix", [
+            ("Prix demandé", eur(b.get("prix_actuel"))), ("Prix/m²", eur(res["prix_m2"])),
+            ("Prix initial observé", eur(b.get("prix_initial"))),
+            ("Ancien prix affiché", eur(b.get("prix_ancien_immoweb"))),
+            ("Baisses de prix", _valeur(b.get("nb_baisses_prix"))),
+            ("Revenu cadastral", eur(b.get("revenu_cadastral")))])
+        _fiche_table("Énergie et équipements", [
+            ("Classe PEB", _valeur(b.get("peb_lettre"))),
+            ("Consommation", _valeur(b.get("peb_kwh_m2"), " kWh/m²/an")),
+            ("N° de certificat PEB", _valeur(b.get("peb_reference"))),
+            ("Chauffage", _valeur(b.get("chauffage"))), ("Cuisine", _valeur(b.get("cuisine")))])
+    with d:
+        _fiche_table("Bâtiment", [
+            ("Surface habitable", _valeur(b.get("surface_habitable"), " m²")),
+            ("Terrain", _valeur(b.get("surface_terrain"), " m²")),
+            ("Jardin / terrasse", f"{_valeur(b.get('surface_jardin'), ' m²')} / {_valeur(b.get('surface_terrasse'), ' m²')}"),
+            ("Chambres / salles d'eau", f"{_valeur(b.get('chambres'))} / {_valeur(b.get('salles_de_bain'))}"),
+            ("Façades / étages", f"{_valeur(b.get('facades'))} / {_valeur(b.get('nb_etages'))}"),
+            ("Cave / grenier", f"{_valeur(None if b.get('cave') is None else bool(b.get('cave')))} / "
+                               f"{_valeur(None if b.get('grenier') is None else bool(b.get('grenier')))}"),
+            ("Année de construction", _valeur(b.get("annee_construction"))), ("État", _valeur(b.get("etat")))])
+        _fiche_table("Annonce", [
+            ("Référence", _valeur(b.get("immoweb_id"))), ("Publiée le", _valeur(b.get("date_publication"))),
+            ("Jours en ligne", _valeur(b.get("jours_en_ligne"))),
+            ("Statut", "en ligne" if b.get("en_ligne") else f"retirée le {b.get('date_retrait')}"),
+            ("Vues / favoris", f"{_valeur(b.get('nb_vues'))} / {_valeur(b.get('nb_favoris'))}"),
+            ("Vendeur", _valeur(b.get("vendeur_type"))), ("Source", _valeur(b.get("source")))])
+    if b.get("description"):
+        st.markdown("**Description**")
+        with st.container(border=True):
+            st.markdown(b["description"].replace("\n", "  \n"))
+    onglet_donnees(c, res)
+
+
+def onglet_reperage(res):
+    r = res["reperage"]
+    with st.container(border=True):
+        a, b_, d, e = st.columns(4)
+        a.metric("Repérage", REPERAGE_ICONES.get(r["statut"], r["statut"]))
+        b_.metric("Écart à la référence", pct(r["ecart"]))
+        d.metric(f"Référence ({'moyenne' if r.get('reference') == 'moyenne' else 'médiane'})",
+                 eur(r["reference_m2"]) + "/m²" if r["reference_m2"] else "—")
+        e.metric("Comparables", r["n_comparables"])
+        seuil = r.get("seuil", P["reperage"]["seuil"]) * 100
+        st.caption(f"GO si le prix/m² est au moins {seuil:.0f} % sous la référence des biens similaires, ramenés au "
+                   f"même état. " + (f"Comparables : {r['criteres']}." if r.get("criteres") else r.get("raison", "")))
+    onglet_prix(res)
+
+
+def _lignes_editeur(config):
+    return pd.DataFrame([{"code": l.get("code") or "", "Catégorie": l.get("categorie"), "Poste": l.get("poste"),
+                          "Unité": l.get("unite"), "Quantité": float(l.get("quantite") or 0),
+                          "Niveau de prix": chantier.NIVEAUX.get(l.get("niveau") or "moyen", "Moyen"),
+                          "Prix devis (€ HTVA)": float("nan") if l.get("prix_saisi") is None else l["prix_saisi"],
+                          "TVA (%)": float(l.get("tva", 0.06)) * 100,
+                          "À mesurer": bool(l.get("a_mesurer")), "Retirer": False}
+                         for l in config.get("lignes", [])],
+                        columns=["code", "Catégorie", "Poste", "Unité", "Quantité", "Niveau de prix",
+                                 "Prix devis (€ HTVA)", "TVA (%)", "À mesurer", "Retirer"])
+
+
+def _lignes_depuis_editeur(df, ancien):
+    inverse = {v: k for k, v in chantier.NIVEAUX.items()}
+    lignes = []
+    for (_, r), old in zip(df.iterrows(), ancien.get("lignes", [])):
+        if r["Retirer"]:
+            continue
+        prix = r["Prix devis (€ HTVA)"]
+        lignes.append({**old, "quantite": float(r["Quantité"] or 0), "niveau": inverse.get(r["Niveau de prix"], "moyen"),
+                       "prix_saisi": None if prix is None or pd.isna(prix) else float(prix),
+                       "tva": float(r["TVA (%)"] or 0) / 100})
+    return lignes
+
+
+def onglet_travaux(c, res):
+    b, ident = res["bien"], res["bien"]["immoweb_id"]
+    cle, cle_v = f"chantier_{ident}", f"chantier_v_{ident}"
+    if cle not in st.session_state:
+        st.session_state[cle] = res["chantier"] or {"lignes": [], "imprevus": P["travaux"]["imprevus"].get(
+            res["travaux"]["niveau"], 0.15), "duree_travaux_mois": 3}
+        st.session_state[cle_v] = 0
+    config, version = st.session_state[cle], st.session_state[cle_v]
+    cat = chantier.catalogue()
+
+    def remplacer(nouvelle_config):
+        st.session_state[cle] = nouvelle_config
+        st.session_state[cle_v] += 1
+        st.rerun()
+
+    st.caption("Composez le chantier poste par poste : cochez les travaux, ajustez les quantités (proposées à partir "
+               "de l'annonce) et le niveau de prix, ou saisissez le prix d'un devis. Prix unitaires HTVA issus de "
+               "l'étude des prix 2025-2026 (cahier des charges, annexe A), à recalibrer avec vos devis.")
+    a, d, e = st.columns([2, 1, 1])
+    modele = a.selectbox("Partir d'un modèle de chantier", list(chantier.MODELES), format_func=chantier.MODELES.get,
+                         index=list(chantier.MODELES).index(res["travaux"]["niveau"])
+                         if res["travaux"]["niveau"] in chantier.MODELES else 1)
+    if d.button("Appliquer le modèle", width="stretch"):
+        remplacer(chantier.appliquer_modele(modele, b, cat))
+    if e.button("Tout effacer", width="stretch"):
+        remplacer({**config, "lignes": []})
+
+    # Postes retenus (modifiables)
+    st.markdown("**Postes retenus**")
+    if config.get("lignes"):
+        edite = st.data_editor(
+            _lignes_editeur(config), key=f"editeur_{ident}_{version}", hide_index=True, width="stretch",
+            disabled=["Catégorie", "Poste", "Unité", "À mesurer"],
+            column_config={"code": None,
+                           "Quantité": st.column_config.NumberColumn(min_value=0.0, step=1.0, format="%.1f"),
+                           "Niveau de prix": st.column_config.SelectboxColumn(options=list(chantier.NIVEAUX.values()),
+                                                                               required=True),
+                           "Prix devis (€ HTVA)": st.column_config.NumberColumn(
+                               min_value=0.0, format="%.2f", help="Prix unitaire d'un devis : remplace le niveau de prix"),
+                           "TVA (%)": st.column_config.SelectboxColumn(options=[6.0, 21.0], required=True),
+                           "Retirer": st.column_config.CheckboxColumn(help="Cocher pour retirer le poste")})
+        lignes = _lignes_depuis_editeur(edite, config)
+        if edite["Retirer"].any():
+            remplacer({**config, "lignes": lignes})
+    else:
+        st.info("Aucun poste retenu : appliquez un modèle ou cochez des postes ci-dessous.")
+        lignes = []
+
+    a, d = st.columns(2)
+    imprevus = a.number_input("Imprévus (%)", 0.0, 50.0, float(config.get("imprevus", 0.15)) * 100, 1.0,
+                              key=f"imprevus_{ident}_{version}") / 100
+    duree = d.number_input("Durée des travaux (mois)", 0.5, 36.0, float(config.get("duree_travaux_mois", 3)), 0.5,
+                           key=f"duree_{ident}_{version}",
+                           help=f"La durée de l'opération ajoute {P['travaux'].get('delai_revente_mois', 3)} mois "
+                                "pour la revente (paramètres).")
+    courant = {**config, "lignes": lignes, "imprevus": imprevus, "duree_travaux_mois": duree}
+
+    # Ajouter des postes du catalogue
+    with st.expander("➕ Ajouter des postes du catalogue", expanded=not lignes):
+        codes = {l.get("code") for l in lignes}
+        coches = set()
+        for categorie, groupe in cat.groupby("categorie", sort=False):
+            st.markdown(f"**{categorie}**")
+            cols = st.columns(2)
+            for i, (_, r) in enumerate(groupe.iterrows()):
+                etiquette = (f"{r['poste']} — {r['prix_bas']:,.0f} à {r['prix_haut']:,.0f} € HTVA / {r['unite']}"
+                             .replace(",", " "))
+                if cols[i % 2].checkbox(etiquette, value=r["code"] in codes, key=f"cat_{ident}_{version}_{r['code']}"):
+                    coches.add(r["code"])
+        catalogue_codes = set(cat["code"])
+        if coches != {c_ for c_ in codes if c_ in catalogue_codes}:
+            garde = [l for l in lignes if not l.get("code") or l["code"] in coches]
+            ajout = [chantier.ligne_catalogue(code, b, cat=cat) for code in cat["code"]
+                     if code in coches and code not in codes]
+            remplacer({**courant, "lignes": garde + ajout})
+    with st.expander("✏️ Ajouter un poste libre (ex. devis spécifique)"):
+        with st.form(f"libre_{ident}"):
+            a, d, e = st.columns([3, 2, 1])
+            poste = a.text_input("Poste")
+            categorie = d.selectbox("Catégorie", list(dict.fromkeys(cat["categorie"])) + ["Autre"])
+            unite = e.text_input("Unité", "forfait")
+            a, d, e = st.columns(3)
+            q = a.number_input("Quantité", 0.0, value=1.0)
+            pu = d.number_input("Prix unitaire (€ HTVA)", 0.0, value=0.0, step=50.0)
+            tva = e.selectbox("TVA", [6.0, 21.0])
+            if st.form_submit_button("Ajouter") and poste:
+                remplacer({**courant, "lignes": lignes + [{
+                    "code": "", "categorie": categorie, "poste": poste, "unite": unite, "quantite": q,
+                    "a_mesurer": False, "niveau": "moyen", "prix_saisi": pu, "tva": tva / 100}]})
+
+    # Résultats
+    calc = chantier.calculer(courant, cat)
+    if calc["postes_a_mesurer"]:
+        st.warning("Quantité à mesurer lors de la visite : " + ", ".join(calc["postes_a_mesurer"]))
+    m = st.columns(5)
+    m[0].metric("Total HTVA", eur(calc["total_htva"]))
+    m[1].metric("TVA", eur(calc["total_tva"]))
+    m[2].metric("Total TVAC", eur(calc["total_tvac"]))
+    m[3].metric(f"Imprévus ({calc['imprevus_pct']:.0%})", eur(calc["imprevus"]))
+    m[4].metric("Total chantier", eur(calc["total_general"]))
+    if not calc["lignes"].empty:
+        a, d = st.columns([3, 2])
+        detail = calc["lignes"][["poste", "quantite", "unite", "origine", "prix_unitaire", "htva", "tvac"]].rename(
+            columns={"poste": "Poste", "quantite": "Quantité", "unite": "Unité", "origine": "Prix",
+                     "prix_unitaire": "€/unité HTVA", "htva": "Total HTVA", "tvac": "Total TVAC"})
+        a.dataframe(detail, hide_index=True, width="stretch",
+                    column_config={k: st.column_config.NumberColumn(format="%.0f")
+                                   for k in ("€/unité HTVA", "Total HTVA", "Total TVAC")})
+        cats = calc["par_categorie"].rename(columns={"categorie": "Catégorie", "htva": "HTVA", "tvac": "TVAC"})
+        d.dataframe(cats, hide_index=True, width="stretch",
+                    column_config={k: st.column_config.NumberColumn(format="%.0f") for k in ("HTVA", "TVAC")})
+        surface = b.get("surface_habitable")
+        if surface:
+            st.caption(f"Soit {calc['total_tvac'] / surface:,.0f} €/m² TVAC hors imprévus — repères : rafraîchissement "
+                       "300 – 800 €/m², rénovation moyenne 800 – 1 500 €/m², lourde 1 500 – 2 500 €/m² (HTVA)."
+                       .replace(",", " "))
+    a, d = st.columns(2)
+    if a.button("💾 Enregistrer le chantier et mettre à jour la rentabilité", type="primary", width="stretch"):
+        chantier.enregistrer(c, ident, courant)
+        st.session_state[cle] = courant
+        st.success("Chantier enregistré : la rentabilité utilise désormais ce total.")
+        st.rerun()
+    if res["chantier"] and d.button("Supprimer le chantier (revenir au pré-chiffrage)", width="stretch"):
+        chantier.supprimer(c, ident)
+        st.session_state.pop(cle, None)
+        st.rerun()
+    if res["chantier"]:
+        st.caption("✅ Chantier enregistré : son total TVAC et sa durée sont repris dans l'onglet Rentabilité.")
+
+
 def page_fiche():
     c = con()
     ids = [r[0] for r in c.execute("SELECT immoweb_id FROM annonces ORDER BY derniere_observation DESC")]
@@ -536,44 +913,51 @@ def page_fiche():
     courant = st.session_state.get("bien")
     libelles = dict(c.execute("SELECT immoweb_id, immoweb_id || ' — ' || COALESCE(commune, '?') || ' — ' || "
                               "COALESCE(CAST(surface_habitable AS INT) || ' m²', 'surface ?') FROM annonces"))
-    ident = st.selectbox("Bien", ids, index=ids.index(courant) if courant in ids else 0,
-                         format_func=lambda i: libelles.get(i, i))
+    a, d = st.columns([4, 1])
+    ident = a.selectbox("Bien", ids, index=ids.index(courant) if courant in ids else 0,
+                        format_func=lambda i: libelles.get(i, i))
+    if d.button("← Base de données", width="stretch"):
+        st.switch_page(PAGE_BIENS)
     st.session_state["bien"] = ident
     res = analyse.analyser(c, ident, P)
     b = res["bien"]
     st.title(f"🏠 {b.get('titre') or 'Maison'} — {b.get('commune') or ''}")
-    lien = b.get("url") or ""
     rue = " ".join(x for x in (b.get("rue"), b.get("numero")) if x)
     ville = " ".join(x for x in (b.get("code_postal"), b.get("commune")) if x)
     st.caption(", ".join(x for x in (rue, ville) if x)
-               + f" · {b.get('etat') or 'état ?'} · PEB {b.get('peb_lettre') or '?'} · source : {b.get('source') or '?'}"
-               + (f" · [annonce]({lien})" if lien.startswith("http") else ""))
+               + f" · {b.get('etat') or 'état ?'} · PEB {b.get('peb_lettre') or '?'} · source : {b.get('source') or '?'}")
     if b.get("source") == "exemple fictif":
         st.warning("Annonce **fictive** (données d'exemple) : les chiffres ne décrivent pas le marché réel.")
     d = res["decision"]
+    travaux_total = (d["bilans"]["central"]["travaux_total"] if d else None)
     m = st.columns(6)
     m[0].metric("Prix demandé", eur(b.get("prix_actuel")))
     m[1].metric("Prix/m²", eur(res["prix_m2"]))
-    m[2].metric("Écart médian communal", pct(res["statbel"]["ecart"]) if res["statbel"] else "—")
-    m[3].metric("Valeur en l'état", eur(res["valeur_en_l_etat"].get("centrale")))
+    m[2].metric("Repérage", res["reperage"]["statut"] if res["reperage"]["statut"] != reperage.INSUFFISANT else "—",
+                pct(res["reperage"]["ecart"]) if res["reperage"]["ecart"] is not None else None, delta_color="inverse")
+    m[3].metric("Travaux TVAC", eur(travaux_total),
+                help="Imprévus compris. " + ("Chantier composé poste par poste." if res["chantier"]
+                                              else "Pré-chiffrage par ratios (onglet Estimation des travaux pour le détailler)."))
     m[4].metric("Prix d'achat maximum", eur(d["prix_max"]) if d else "—")
     m[5].metric("Décision", d["statut"] if d else "incomplète")
-    onglets = st.tabs(["Décision", "Prix & comparables", "Opération", "Risques", "Historique", "Données du bien"])
+    onglets = st.tabs(["Annonce", "Repérage et prix", "Estimation des travaux", "Rentabilité", "Risques", "Historique"])
     with onglets[0]:
+        onglet_annonce(c, res)
+    with onglets[1]:
+        onglet_reperage(res)
+    with onglets[2]:
+        onglet_travaux(c, res)
+    with onglets[3]:
         bloc_decision(res)
+        st.divider()
+        onglet_operation(c, res)
         if st.button("📌 Enregistrer cette analyse"):
             analyse.enregistrer_analyse(c, res)
             st.success("Analyse enregistrée (onglet Historique).")
-    with onglets[1]:
-        onglet_prix(res)
-    with onglets[2]:
-        onglet_operation(c, res)
-    with onglets[3]:
-        onglet_risques(c, res)
     with onglets[4]:
-        onglet_historique(c, res)
+        onglet_risques(c, res)
     with onglets[5]:
-        onglet_donnees(c, res)
+        onglet_historique(c, res)
 
 
 # ------------------------------------------------------------------ page : données
@@ -638,6 +1022,28 @@ def page_donnees():
         with st.expander(f"Médianes de la zone ({len(med)} lignes, dernière année)"):
             st.dataframe(med, hide_index=True, width="stretch",
                          column_config={"Prix médian (€)": st.column_config.NumberColumn(format="%.0f")})
+
+    st.subheader("Collecte automatique des annonces")
+    dossier = collecte._dossier(P)
+    st.caption(f"Planifiez `python -m immo.collecte` toutes les {P['collecte']['intervalle_minutes']} minutes "
+               "(ou lancez `python -m immo.collecte --boucle`). Sources activées : "
+               + ", ".join(P["collecte"]["sources"]) + f". Dossier d'import : `{dossier}` — y déposer des pages "
+               "d'annonces enregistrées (.html) ou des fichiers CSV.")
+    if st.button("▶️ Lancer une collecte maintenant"):
+        for r in collecte.executer(c, P):
+            if r["statut"] == "ok":
+                st.success(f"{r['source']} : {r['vues']} annonce(s) lue(s), {len(r['nouvelles'])} nouvelle(s), "
+                           f"{len(r['modifiees'])} modifiée(s)" + (f" — erreurs : {'; '.join(r['erreurs'])}"
+                                                                    if r["erreurs"] else ""))
+            else:
+                st.warning(f"{r['source']} : {r['statut']} — {r.get('message', '')}")
+    j = collecte.journal(c, 20)
+    if not j.empty:
+        j = j.rename(columns={"debut": "Début", "fin": "Fin", "source": "Source", "statut": "Statut", "vues": "Lues",
+                              "nouvelles": "Nouvelles", "modifiees": "Modifiées", "retirees": "Retirées",
+                              "erreurs": "Erreurs"})
+        j["Début"] = j["Début"].str[:16].str.replace("T", " ")
+        st.dataframe(j.drop(columns=["Fin"]), hide_index=True, width="stretch")
 
     st.subheader("Annonces")
     a, b, d = st.columns(3)
@@ -826,14 +1232,14 @@ def page_parametres():
             st.dataframe(pd.DataFrame(lignes), hide_index=True, width="stretch")
 
 
-PAGE_BIENS = st.Page(page_biens, title="Biens", icon="📋", default=True)
+PAGE_BIENS = st.Page(page_base, title="Base de données", icon="🗃️", default=True)
 PAGE_AJOUTER = st.Page(page_ajouter, title="Ajouter un bien", icon="➕")
 PAGE_FICHE = st.Page(page_fiche, title="Fiche du bien", icon="🏠")
 PAGE_DONNEES = st.Page(page_donnees, title="Données", icon="🗂️")
 PAGE_PARAMETRES = st.Page(page_parametres, title="Paramètres", icon="⚙️")
 
 mise_a_jour_automatique(con())
-PAGES = {"biens": page_biens, "ajouter": page_ajouter, "fiche": page_fiche, "donnees": page_donnees,
+PAGES = {"biens": page_base, "ajouter": page_ajouter, "fiche": page_fiche, "donnees": page_donnees,
          "parametres": page_parametres}
 if st.session_state.get("_page_test") in PAGES:      # utilisé par les tests automatisés (AppTest)
     PAGES[st.session_state["_page_test"]]()

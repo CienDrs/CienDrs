@@ -32,6 +32,7 @@ import sqlite3
 from datetime import date, timedelta
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 ICI = Path(__file__).parent
@@ -90,6 +91,16 @@ def distance_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
+def distances_km(lat, lon, lats, lons):
+    """Distances (km) d'un point à une série de points, calcul vectorisé ; infini si coordonnées absentes."""
+    la = np.radians(pd.to_numeric(lats, errors="coerce").to_numpy(dtype=float))
+    lo = np.radians(pd.to_numeric(lons, errors="coerce").to_numpy(dtype=float))
+    p1, l1 = math.radians(lat), math.radians(lon)
+    a = np.sin((la - p1) / 2) ** 2 + math.cos(p1) * np.cos(la) * np.sin((lo - l1) / 2) ** 2
+    d = 2 * 6371.0 * np.arcsin(np.sqrt(a))
+    return np.where(np.isnan(d), np.inf, d)
+
+
 def trimestre(d: str) -> str:
     a, m = int(d[:4]), int(d[5:7])
     return f"{a}-T{(m - 1) // 3 + 1}"
@@ -116,6 +127,7 @@ def enregistrer_observation(con, immoweb_id, prix, date_observation=None, commit
     """
     immoweb_id = str(immoweb_id)
     d = date_observation or date.today().isoformat()
+    liste_photos = champs.pop("photos", None)
     champs = {k: _nettoyer(k, v) for k, v in champs.items() if k in CHAMPS_ANNONCE}
     champs = {k: v for k, v in champs.items() if v is not None}
     if champs.get("latitude") is not None and champs.get("longitude") is not None:
@@ -141,6 +153,8 @@ def enregistrer_observation(con, immoweb_id, prix, date_observation=None, commit
                                 "ORDER BY date_observation DESC LIMIT 1", (immoweb_id, d)).fetchone()
         if precedent is None or precedent[0] != float(prix):
             con.execute("INSERT OR REPLACE INTO historique_prix VALUES (?, ?, ?)", (immoweb_id, d, float(prix)))
+    if liste_photos:
+        enregistrer_photos(con, immoweb_id, liste_photos, commit=False)
     if commit:
         con.commit()
 
@@ -263,7 +277,26 @@ def extraire_page_immoweb(html: str) -> dict:
         "nb_favoris": _chemin(data, "statistics", "bookmarkCount"),
         "description": anonymiser(description),
         "date_publication": creation[:10] if creation else None,
+        "source": "immoweb",
+        "photos": [{"miniature": ph.get("mediumUrl") or ph.get("smallUrl"),
+                    "grande": ph.get("largeUrl") or ph.get("extralargeUrl") or ph.get("mediumUrl")}
+                   for ph in (_chemin(data, "media", "pictures") or []) if isinstance(ph, dict)
+                   and (ph.get("mediumUrl") or ph.get("largeUrl"))],
     }
+
+
+def enregistrer_photos(con, immoweb_id, photos, commit=True):
+    """Remplace les liens des photos d'une annonce (les images restent hébergées par le site d'origine)."""
+    con.execute("DELETE FROM photos WHERE immoweb_id = ?", (str(immoweb_id),))
+    con.executemany("INSERT INTO photos VALUES (?, ?, ?, ?)",
+                    [(str(immoweb_id), i, ph["miniature"], ph["grande"]) for i, ph in enumerate(photos)])
+    if commit:
+        con.commit()
+
+
+def lire_photos(con, immoweb_id):
+    return [{"miniature": m, "grande": g} for m, g in con.execute(
+        "SELECT url_miniature, url_grande FROM photos WHERE immoweb_id = ? ORDER BY ordre", (str(immoweb_id),))]
 
 
 def champs_manquants(con, immoweb_id):
@@ -366,8 +399,7 @@ def comparables(df, surface, chambres=None, surface_terrain=None, lat=None, lon=
     if exclure_id is not None:
         base = base[base["immoweb_id"] != str(exclure_id)]
     if lat is not None and lon is not None and base["latitude"].notna().any():
-        base = base.assign(distance_km=[distance_km(lat, lon, a, o) if pd.notna(a) else math.inf
-                                        for a, o in zip(base["latitude"], base["longitude"])])
+        base = base.assign(distance_km=distances_km(lat, lon, base["latitude"], base["longitude"]))
     else:
         base = base.assign(distance_km=math.nan)
 

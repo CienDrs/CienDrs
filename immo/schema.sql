@@ -123,3 +123,32 @@ CREATE TABLE IF NOT EXISTS mises_a_jour (
     message     TEXT,
     date_succes TEXT                    -- dernière mise à jour réussie
 );
+
+-- Liens des photos d'une annonce (affichées depuis le site d'origine, jamais redistribuées)
+CREATE TABLE IF NOT EXISTS photos (
+    immoweb_id    TEXT NOT NULL REFERENCES annonces(immoweb_id) ON DELETE CASCADE,
+    ordre         INTEGER NOT NULL,
+    url_miniature TEXT,
+    url_grande    TEXT,
+    PRIMARY KEY (immoweb_id, ordre)
+);
+
+-- Chantier composé poste par poste pour un bien (onglet « Estimation des travaux »)
+CREATE TABLE IF NOT EXISTS travaux_bien (
+    immoweb_id    TEXT PRIMARY KEY REFERENCES annonces(immoweb_id) ON DELETE CASCADE,
+    configuration TEXT NOT NULL,       -- JSON : lignes (poste, quantité, niveau ou prix saisi), imprévus, durée
+    date          TEXT NOT NULL
+);
+
+-- Journal des collectes automatiques
+CREATE TABLE IF NOT EXISTS collectes (
+    debut       TEXT PRIMARY KEY,
+    fin         TEXT,
+    source      TEXT,
+    statut      TEXT,                  -- 'ok', 'erreur', 'bloquée'
+    vues        INTEGER,
+    nouvelles   INTEGER,
+    modifiees   INTEGER,
+    retirees    INTEGER,
+    erreurs     TEXT
+);

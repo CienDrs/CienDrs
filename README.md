@@ -32,15 +32,28 @@ Au lancement, l'application **importe elle-même les prix médians Statbel** par
 
 Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en texte avec l'API Claude (sinon, extraction par expressions régulières).
 
-## Ce que fait la V1
+## Ce que fait l'application (V1.1)
 
 | Page | Fonctions |
 |---|---|
-| **Ajouter un bien** | Import d'une page Immoweb enregistrée (Ctrl+S), d'un texte d'annonce de n'importe quel site (API Claude ou expressions régulières) ou saisie manuelle → **écran de vérification** obligatoire (prix, surface, code postal wallon) → géocodage et vérification des risques |
-| **Biens** | Liste filtrable (commune, état, en ligne, exemples), prix/m², jours en ligne, baisses de prix, dernière décision |
-| **Fiche du bien** | Prix/m², **écart au médian Statbel** de la commune, **prix/m² vs comparables**, valeur en l'état et après travaux (fourchette, confiance), graphiques et carte, pré-chiffrage des travaux, **modèle financier** (3 scénarios, frais wallons, portage, impôt indicatif), **prix d'achat maximum**, **décision GO / GO SOUS CONDITIONS / NO-GO** (règles R1 à R7), risques automatiques et manuels, historique des prix, analyses enregistrées |
-| **Données** | État de la mise à jour automatique Statbel (date, source, erreurs) et bouton « Mettre à jour maintenant » ; médianes de la zone ; import / export d'annonces |
-| **Paramètres** | Formulaires par thème (stratégie, fiscalité, financement, revente, travaux, scénarios, estimation) ; les valeurs modifiées sont enregistrées dans `data/parametres_utilisateur.json`, les valeurs par défaut restent dans `immo/parametres.toml` |
+| **Base de données** | Tous les biens récoltés avec le **repérage GO / NO-GO** (phase 1) : écart du prix/m² à la médiane ou à la moyenne des biens similaires ramenés au même état ; réglages à l'écran (référence, seuil, rayon, nombre de comparables) ; filtres (repérage, commune, prix, prix/m², surface, distance, terrain, chambres, façades, état, PEB, année, écart, baisse de prix, date de publication, durée en ligne, en ligne / retirée) ; photo miniature ; export CSV ; un clic ouvre la fiche |
+| **Fiche du bien** | Onglets **Annonce** (photos, toutes les informations, description, champs à compléter), **Repérage et prix** (statut, comparables, médian Statbel, valeur en l'état et après travaux, graphiques, carte), **Estimation des travaux** (chantier composé poste par poste à partir du catalogue de prix de l'annexe A : modèles, quantités proposées, niveau bas / moyen / haut ou prix de devis, postes libres, totaux HTVA / TVA / TVAC, imprévus, durée), **Rentabilité** (3 scénarios, prix d'achat maximum, décision R1 à R7), **Risques** (géoportail wallon et risques saisis), **Historique** |
+| **Ajouter un bien** | Page Immoweb enregistrée (avec ses photos), texte d'annonce collé (API Claude ou expressions régulières) ou saisie, avec écran de vérification |
+| **Données** | Mise à jour automatique Statbel, collecte automatique (journal, lancement manuel), import / export d'annonces |
+| **Paramètres** | Formulaires par thème ; valeurs modifiées enregistrées dans `data/parametres_utilisateur.json` |
+
+## Collecte automatique
+
+```bash
+poetry run python -m immo.collecte            # une collecte (à planifier toutes les heures : cron, planificateur Windows)
+poetry run python -m immo.collecte --boucle   # collecte en continu, toutes les 60 minutes
+```
+
+Sources (section `[collecte]` de `immo/parametres.toml`) :
+- **dossier d'import** (`data/import/`) : les pages d'annonces enregistrées (.html, avec photos) et les fichiers CSV qui y sont déposés sont importés puis rangés dans `traites/` (ou `erreurs/`) ;
+- **API** : emplacement prévu pour un accès officiel aux données (clé dans la variable d'environnement `IMMO_API_CLE`), à brancher quand un accès est obtenu.
+
+La lecture automatique des pages d'Immoweb (mode M7 du cahier des charges) n'est pas incluse dans cette version.
 
 ## Organisation
 
@@ -49,6 +62,9 @@ Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en 
 | `app.py` | Interface Streamlit |
 | `immo/annonces.py` | Base SQLite des annonces, historique des prix, actualisation, comparables, import de page Immoweb |
 | `immo/estimation.py` | Valeur en l'état et après travaux à partir des comparables |
+| `immo/reperage.py` | Repérage GO / NO-GO (phase 1) |
+| `immo/chantier.py` | Estimation des travaux poste par poste ; catalogue `data/catalogue_travaux.csv` |
+| `immo/collecte.py` | Collecte automatique (dossier d'import, API), journal |
 | `immo/finance.py` | Bilan d'opération, scénarios, prix d'achat maximum, règles de décision |
 | `immo/travaux.py` | Pré-chiffrage des travaux (ratios €/m² par niveau + gain PEB) |
 | `immo/regression_travaux.py` | Régression sur le coût des travaux (à alimenter avec les chantiers réels) |

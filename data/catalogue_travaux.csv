@@ -1,0 +1,40 @@
+code,categorie,poste,unite,prix_bas,prix_haut,tva,quantite,modeles,source
+vidage,Démolition et évacuation,Vidage / débarras,m³,35,70,0.06,a_mesurer,,TrustUp / Bobex 2026
+gravats,Démolition et évacuation,Évacuation des gravats,m³,20,45,0.06,a_mesurer,,TrustUp 2026
+conteneur,Démolition et évacuation,Location de conteneur,unité,200,800,0.21,conteneur,"rafraichissement,renovation_moyenne,renovation_lourde",TrustUp 2026
+diag_amiante,Désamiantage,Diagnostic amiante,forfait,150,600,0.21,amiante,"renovation_moyenne,renovation_lourde",TrustUp 2026
+desamiantage_toit,Désamiantage,Retrait de toiture en fibrociment (évacuation comprise),m²,25,65,0.06,a_mesurer,,TrustUp / Bobex 2026
+toiture_complete,Toiture,"Toiture inclinée complète (tuiles, sous-toiture, isolation)",m² de toit,150,250,0.06,toit,renovation_lourde,Bobex / prix-renovation-toiture.be 2026
+isolation_toit,Toiture,Isolation de toiture par l'intérieur,m² de toit,20,60,0.06,toit,"renovation_moyenne,renovation_energetique",Bobex / guide-renovation.be 2026
+toit_plat,Toiture,Toiture plate EPDM,m²,55,90,0.06,a_mesurer,,TrustUp 2026
+gouttieres,Toiture,Gouttières (zinc ou PVC),ml,30,80,0.06,a_mesurer,,TrustUp 2026
+rejointoyage,Façade et humidité,Rejointoyage de façade,m²,40,60,0.06,a_mesurer,,Bobex 2025
+crepi,Façade et humidité,Crépi de façade,m²,35,120,0.06,a_mesurer,,TrustUp 2026
+isolation_facade,Façade et humidité,Isolation de façade par l'extérieur (crépi sur isolant),m²,100,250,0.06,a_mesurer,renovation_energetique,TrustUp 2026
+humidite,Façade et humidité,Injection contre l'humidité ascensionnelle,ml de mur,40,150,0.06,a_mesurer,,TrustUp 2026
+enduit_renovation,Façade et humidité,Enduit de rénovation après assèchement,m²,25,45,0.06,a_mesurer,,TrustUp 2026
+chassis_m2,Menuiseries extérieures,Châssis PVC double vitrage posés,m² de baie,300,700,0.06,SH*0.15,"renovation_lourde,renovation_energetique",TrustUp / Bobex 2026
+fenetre,Menuiseries extérieures,Remplacement d'une fenêtre,unité,400,1300,0.06,SH/12,,TrustUp 2026
+isolation_sol,Isolation,Isolation du sol,m²,20,60,0.06,rdc,renovation_lourde,TrustUp 2026
+plafonnage,Plafonnage et cloisons,Plafonnage traditionnel murs et plafonds (rénovation),m²,15,45,0.06,SH*3.5,"renovation_moyenne,renovation_lourde",TrustUp / Bobex 2026
+gyproc,Plafonnage et cloisons,"Gyproc (doublage, plafond)",m²,25,60,0.06,a_mesurer,,TrustUp 2026
+cloison,Plafonnage et cloisons,Cloison en gyproc sur ossature,m²,30,70,0.06,a_mesurer,,TrustUp 2026
+faux_plafond,Plafonnage et cloisons,Faux plafond,m²,45,120,0.06,a_mesurer,,TrustUp 2026
+chape,Sols,Chape traditionnelle,m²,25,45,0.06,SH,renovation_lourde,Batibouw+ / TrustUp 2026
+chape_liquide,Sols,Chape liquide,m²,35,60,0.06,SH,,Batibouw+ 2026
+ragreage,Sols,Ragréage,m²,8,15,0.06,SH,,TrustUp 2026
+carrelage,Sols,"Carrelage grès cérame, fourni et posé",m²,40,70,0.06,SH*0.4,"renovation_moyenne,renovation_lourde",TrustUp 2026
+pose_carrelage,Sols,Pose de carrelage seule (hors fourniture),m²,25,75,0.06,SH*0.4,,TrustUp 2026
+stratifie,Sols,Stratifié fourni et posé,m²,30,60,0.06,SH*0.6,"rafraichissement,renovation_moyenne,renovation_lourde",TrustUp 2026
+parquet,Sols,Parquet contrecollé fourni et posé,m²,50,90,0.06,SH*0.6,,TrustUp 2026
+peinture,Finitions,Peinture murs et plafonds (préparation + 2 couches),m²,15,45,0.06,SH*3.5,"rafraichissement,renovation_moyenne,renovation_lourde",TrustUp 2026
+portes,Finitions,Porte intérieure posée,unité,150,600,0.06,SH/15,"renovation_moyenne,renovation_lourde",TrustUp 2026
+electricite,Électricité,Rénovation électrique complète (mise aux normes RGIE),m²,80,150,0.06,SH,"renovation_moyenne,renovation_lourde",TrustUp 2026
+rgie,Électricité,Mise en conformité RGIE ponctuelle,forfait,1500,5000,0.06,1,rafraichissement,TrustUp / Bobex 2026
+plomberie,Plomberie et chauffage,Remplacement des conduites,forfait,1500,4000,0.06,1,renovation_lourde,TrustUp 2026
+chaudiere_gaz,Plomberie et chauffage,Chaudière gaz à condensation (avec eau chaude),unité,3000,6000,0.21,1,renovation_moyenne,TrustUp 2026 (TVA 21 % depuis le 29/07/2025)
+pac,Plomberie et chauffage,Pompe à chaleur air-eau,unité,8000,15000,0.06,1,"renovation_lourde,renovation_energetique",TrustUp 2026
+vmc_simple,Ventilation,VMC simple flux hygroréglable,unité,800,1600,0.06,1,"renovation_lourde,renovation_energetique",Bobex 2026
+vmc_double,Ventilation,VMC double flux,unité,2300,4600,0.06,1,,Bobex 2026
+salle_de_bain,Sanitaires et cuisine,Salle de bain complète (5 à 10 m²),forfait,5000,20000,0.06,salles_eau,"renovation_moyenne,renovation_lourde",TrustUp 2026
+cuisine,Sanitaires et cuisine,Cuisine équipée posée,forfait,5000,20000,0.06,1,"renovation_moyenne,renovation_lourde",TrustUp / Bobex 2026
