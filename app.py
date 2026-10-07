@@ -525,7 +525,9 @@ def page_fiche():
     b = res["bien"]
     st.title(f"🏠 {b.get('titre') or 'Maison'} — {b.get('commune') or ''}")
     lien = b.get("url") or ""
-    st.caption(f"{b.get('rue') or ''} {b.get('numero') or ''}, {b.get('code_postal') or ''} {b.get('commune') or ''}"
+    rue = " ".join(x for x in (b.get("rue"), b.get("numero")) if x)
+    ville = " ".join(x for x in (b.get("code_postal"), b.get("commune")) if x)
+    st.caption(", ".join(x for x in (rue, ville) if x)
                f" · {b.get('etat') or 'état ?'} · PEB {b.get('peb_lettre') or '?'} · source : {b.get('source') or '?'}"
                + (f" · [annonce]({lien})" if lien.startswith("http") else ""))
     if b.get("source") == "exemple fictif":
