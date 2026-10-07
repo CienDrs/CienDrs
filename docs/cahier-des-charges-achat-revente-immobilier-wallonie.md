@@ -6,9 +6,10 @@
 | Zone | Belgique, Région wallonne — **rayon de 10 km autour de Mons** |
 | Type de bien (v1) | **Maisons** uniquement |
 | Point d'entrée | **Annonce Immoweb** du bien, **importée par l'utilisateur** (pas de collecte automatique, cf. §4.1) |
-| Version | 2.1 (acquisition des annonces par import utilisateur) |
+| Version | 3.0 (fusion avec le cahier des charges « App d'analyse immobilière (Wallonie) ») |
 | Date | 07/10/2026 |
 | Statut | Proposition — à valider |
+| Versions produit | **MVP** → **V2** → **V3** (cf. §12) |
 
 > ⚠️ Les taux fiscaux, droits d'enregistrement et obligations légales cités dans ce document sont des **valeurs par défaut indicatives**, à faire valider par un notaire et un comptable/fiscaliste avant toute opération. Ils sont tous **paramétrables** dans l'outil.
 
@@ -27,7 +28,7 @@ L'activité consiste à acheter des maisons sous-évaluées (souvent à rénover
 Spécificités belges qui pèsent fortement sur le modèle :
 - **Pas de base publique des transactions à l'adresse** (pas d'équivalent du DVF français) : l'estimation repose sur les annonces (Immoweb), les médianes communales Statbel, le baromètre des notaires et les avis de valeur.
 - **Droits d'enregistrement élevés** en Wallonie pour un achat d'investissement (12,5 % par défaut), qui réduisent fortement la marge.
-- **Les annonces Immoweb ne peuvent pas être collectées automatiquement** : l'extraction automatisée est interdite par les conditions d'utilisation du site, le site est protégé contre les robots, et l'environnement d'exécution de l'outil n'y a pas accès (vérifié : requête vers `www.immoweb.be` refusée). Un lien d'annonce seul ne suffit donc pas : c'est l'utilisateur qui importe l'annonce qu'il consulte (cf. §4.1).
+- **Les annonces Immoweb ne peuvent pas être collectées automatiquement** : l'extraction automatisée est interdite par les conditions d'utilisation du site, le site est protégé contre les robots, et l'environnement d'exécution de l'outil n'y a pas accès (vérifié : requête vers `www.immoweb.be` refusée). Un lien d'annonce seul ne suffit donc pas : c'est l'utilisateur qui importe l'annonce qu'il consulte (cf. §4.1). Une collecte automatique à petite échelle (mode M7) reste une option soumise à décision explicite du porteur de projet.
 - **Une offre d'achat écrite acceptée vaut vente** : l'offre doit être émise avec des conditions suspensives et un prix déjà validé par le modèle.
 
 ### 1.2 Objectifs métier
@@ -38,6 +39,12 @@ Spécificités belges qui pèsent fortement sur le modèle :
 | O3 | Estimer le coût des travaux de rénovation | Écart ≤ 15 % entre budget estimé et coût final (hors imprévus provisionnés) |
 | O4 | Estimer le prix de revente après travaux | Écart médian ≤ 8 % avec le prix de revente réel |
 | O5 | Garantir une **plus-value nette minimale de 30 000 €** par opération | Aucune offre émise si la plus-value nette prévisionnelle (scénario prudent) < 30 000 € |
+| O6 | Dire en quelques secondes si le **prix demandé est dans la norme** (écart au médian Statbel, prix/m² vs comparables, puis score du modèle) | Fiche complète en < 10 s après validation de l'import |
+| O7 | Signaler automatiquement les **risques du terrain** (zone inondable, plan de secteur, contraintes géotechniques) | 100 % des biens géocodés vérifiés sur WalOnMap |
+| O8 | **Suivre les annonces dans le temps** : baisses de prix, durée en ligne, retrait / vente | Une baisse de prix sur une annonce suivie est détectée et signalée |
+| O9 | **Explorer un secteur** (commune ou rayon) : statistiques, graphiques, carte | Vue secteur disponible dès 30 biens en base |
+
+**Succès réel** : l'outil a servi à décider d'une visite, d'une offre ou d'un renoncement.
 
 ### 1.3 Définition de la plus-value cible
 
@@ -71,11 +78,18 @@ Plus-value nette = Prix de revente
 - Modèle financier, décision Go / No-Go et prix d'offre maximum.
 - Suivi de l'opération jusqu'à la revente et bilan prévu / réel.
 
-### 2.3 Exclus (v1)
+### 2.3 Principes d'architecture et d'usage
+- **Usage personnel**, un seul utilisateur (plus éventuellement un apporteur d'affaires) ; pas de diffusion publique ni de revente des données d'annonces.
+- **Extensible** : chaque source d'annonces (Immoweb, puis Zimmo, Immovlan) et chaque source géographique (géoportail wallon ; plus tard Flandre et Bruxelles) est un **module séparé**. L'extension aux appartements et à toute la Wallonie ne demande pas de refonte.
+
+### 2.4 Exclus (v1)
 - Appartements, immeubles de rapport, division d'une maison en plusieurs logements (permis d'urbanisme spécifique), terrains à bâtir.
 - Démolition-reconstruction et rénovations assimilées à du neuf (régime TVA spécifique).
 - Ventes publiques (Biddit) — à envisager en v2.
-- Gestion locative.
+- Gestion locative, locations, biens commerciaux.
+- Flandre et Bruxelles (géoportails et fiscalité différents).
+- Application mobile native (l'application web responsive suffit).
+- Collecte massive d'annonces.
 
 ---
 
@@ -91,12 +105,30 @@ Plus-value nette = Prix de revente
 | Comptable / fiscaliste | Validation du régime fiscal (hors outil) |
 | Banque | Destinataire du dossier de financement exporté |
 
+### 3.1 User stories
+
+| ID | En tant qu'investisseur, je veux… | Afin de… | Version |
+|---|---|---|---|
+| US1 | importer une annonce (URL, page sauvegardée ou texte collé) et voir ses infos pré-remplies | ne pas tout retaper | MVP |
+| US2 | corriger ou compléter les champs extraits sur un écran de vérification | garder des données fiables | MVP |
+| US3 | ajouter un bien à la main | analyser un bien hors annonce (agence, bouche-à-oreille) | MVP |
+| US4 | voir l'écart entre le prix demandé et le médian Statbel de la commune | savoir si le prix est dans la norme | MVP |
+| US5 | voir le prix/m² comparé aux maisons similaires proches | comparer à surface égale | MVP |
+| US6 | voir si le bien est en zone inondable, son affectation au plan de secteur et les contraintes géotechniques | éviter un piège | MVP |
+| US7 | obtenir le prix d'achat maximum qui garantit 30 000 € de plus-value | savoir jusqu'où négocier | MVP |
+| US8 | obtenir un prix estimé par le modèle et un score (sous-coté / dans la norme / surcoté) | repérer les bonnes affaires | V2 |
+| US9 | être prévenu quand le prix d'une annonce suivie baisse | négocier au bon moment | V2 |
+| US10 | explorer un secteur (commune ou rayon) avec graphiques et carte | connaître le marché local | V2 |
+| US11 | comparer 2 à 4 biens côte à côte | trancher entre plusieurs visites | V2 |
+| US12 | ajouter mes notes et photos de visite | garder mes impressions avec les chiffres | V3 |
+| US13 | voir commerces, écoles et gare à proximité | juger l'attractivité à la revente | V3 |
+
 ---
 
 ## 4. Processus cible
 
 ```
- 1. Annonce Immoweb consultée et importée par l'utilisateur ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
+ 1. Annonce importée par l'utilisateur ──► 1b. Écran de vérification ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
                                                                                                  │
  8. Compromis → acte (≤ 4 mois) ◄── 7. Offre écrite (conditions suspensives) ◄── 6. GO/NO-GO ◄── 5. Devis travaux
         │
@@ -104,6 +136,8 @@ Plus-value nette = Prix de revente
  9. Travaux (suivi budget/planning) ──► 10. Certificats (PEB, électricité) ──► 11. Mise en vente (Immoweb)
         ──► 12. Revente ──► 13. Bilan prévu / réel (recalibre les modèles)
 ```
+
+> **Règle** : l'extraction propose, l'utilisateur valide. Aucune donnée n'entre en base sans passer par l'**écran de vérification** (champs pré-remplis, champs manquants ou douteux mis en évidence, règles de validation : surface > 0, PEB parmi A++ à G, code postal wallon). Les réimports d'annonces déjà suivies (mise à jour du prix) ne demandent une validation que si un champ autre que le prix a changé.
 
 ### 4.1 Acquisition des annonces — contrainte structurante
 
@@ -113,9 +147,12 @@ L'outil **ne télécharge jamais lui-même** les pages Immoweb. Le lien (URL) d'
 |---|---|---|---|
 | **M1 — Page sauvegardée** | L'utilisateur enregistre la page (Ctrl+S, « HTML ») et la dépose dans l'outil ; les données sont extraites de l'objet `window.classified` de la page | ≈ 20 s par annonce | Must |
 | **M2 — Marque-page d'import** (bookmarklet) ou petite extension de navigateur | Sur la page affichée, un clic lit les données de l'annonce et les envoie à l'outil (une annonce à la fois, à l'initiative de l'utilisateur) | 1 clic | Should |
-| **M3 — Copier-coller du texte** | L'utilisateur colle le texte de l'annonce ; l'outil reconnaît prix, surfaces, chambres, PEB, kWh/m², etc. et demande les champs manquants | ≈ 1 min | Should |
+| **M3 — Copier-coller du texte** (secours universel) | L'utilisateur colle le texte d'une annonce de **n'importe quel site** ; un modèle de langage (API Claude, ou modèle local via Ollama) extrait les champs en JSON, puis l'écran de vérification s'ouvre | ≈ 1 min, quelques centimes par annonce | Must |
+| **M3b — Autres portails** | Extracteurs dédiés **Zimmo** et **Immovlan** (données structurées JSON-LD des pages sauvegardées) | ≈ 20 s | V2 |
 | **M4 — Saisie / import CSV** | Formulaire ou fichier (une ligne par observation datée) | Variable | Must |
 | **M5 — Accord de données** | Flux fourni par Immoweb ou un fournisseur de données immobilières sous contrat ; supprime la contrainte d'import manuel | Aucun | Could (à négocier) |
+| **M6 — Alertes e-mail** | Lecture automatique quotidienne des alertes e-mail Immoweb de l'utilisateur (recherche sauvegardée) pour ajouter les nouvelles annonces | Aucun | V2 |
+| **M7 — Scan / rescan automatique à petite échelle** | Collecte quotidienne des annonces d'un secteur et des annonces suivies (≤ 1 requête toutes les 3 à 5 s, plafond de pages par jour, respect du robots.txt, arrêt au premier blocage, **aucun contournement des protections anti-robots**) | Aucun | **En attente de décision** : contraire aux conditions d'utilisation d'Immoweb ; à n'activer que sur décision explicite du porteur de projet, qui en assume le risque, et sur sa propre machine |
 
 **Conséquences sur l'outil :**
 - **Historique des prix et durée en ligne** : ils n'existent que pour les annonces **revues régulièrement**. L'outil produit une **liste de tournée** (annonces suivies non revues depuis 7 jours, avec leurs liens) que l'utilisateur parcourt chaque semaine en réimportant chaque page (M1/M2) ; une annonce introuvable lors de la tournée est marquée retirée.
@@ -123,6 +160,8 @@ L'outil **ne télécharge jamais lui-même** les pages Immoweb. Le lien (URL) d'
 - **Nouvelles annonces** : repérées via les **alertes e-mail Immoweb** de l'utilisateur, qui ouvre puis importe les annonces intéressantes.
 - **Robustesse** : la structure des pages Immoweb peut changer ; l'extraction est testée sur des pages réelles sauvegardées, et toute erreur d'extraction bascule vers la saisie assistée (M3/M4) au lieu de bloquer.
 - **Données personnelles** : les noms et coordonnées d'agents ou de vendeurs présents dans les pages ne sont pas conservés (RGPD).
+- **Données brutes** : le JSON (ou le texte) d'extraction est conservé, pour pouvoir ré-extraire les champs après une amélioration de l'extracteur sans réimporter l'annonce.
+- **Un extracteur par site**, isolé, testé sur des pages réelles sauvegardées (détecte un extracteur cassé sans accès réseau).
 
 ---
 
@@ -191,6 +230,24 @@ Valeur en l'état = Médiane €/m² des comparables de même état (corrigée d
                    × Surface habitable × (1 + Σ ajustements)
 ```
 > Contrôle de cohérence : la valeur est comparée à la médiane Statbel de la commune ; un écart > 30 % déclenche une alerte.
+
+**Trois indicateurs de prix, du plus simple au plus fin.** Chacun n'est affiché que si ses conditions de fiabilité sont remplies.
+
+| Indicateur | Calcul | Condition | Version |
+|---|---|---|---|
+| Écart au médian communal | (prix demandé − médian Statbel) / médian Statbel, même type de maison | Médian Statbel disponible pour la commune | MVP |
+| Prix/m² vs comparables | Médiane du prix/m² actualisé des comparables (§5.2.1, B13) | Au moins 5 comparables | MVP |
+| Résidu du modèle hédonique | (prix demandé − prix prédit) / prix prédit | Au moins 30 maisons dans le secteur | V2 |
+
+| ID | Exigence | Priorité |
+|---|---|---|
+| B19 | Rattachement de chaque bien à sa commune par le **code NIS** (clé de Statbel), à partir des coordonnées ou du code postal (un code postal peut couvrir une partie de commune seulement) | Must |
+| B20 | **Modèle hédonique** (V2) : régression linéaire multiple sur le **logarithme du prix**, pour des coefficients lisibles en % (« une façade de plus = +X % ») et un poids limité des biens très chers : `log(prix) = β0 + β1·surface + β2·log(terrain) + β3·façades + β4·PEB + β5·état + β6·année + ε`. PEB et état en variables catégorielles ; commune en effet fixe si le secteur couvre plusieurs communes. On démarre avec la surface seule, puis on ajoute une variable à la fois, avec au moins 10 biens par variable | Should (V2) |
+| B21 | Validation croisée à 5 plis : erreur moyenne absolue (%) et R² affichés à côté de chaque estimation ; **intervalle de prédiction à 80 %** affiché avec le prix estimé ; estimations **versionnées** pour comparer les modèles entre eux | Should (V2) |
+| B22 | **Score** à partir du résidu : < −10 % « sous-coté », entre −10 % et +10 % « dans la norme », > +10 % « surcoté » ; seuils recalibrés quand l'erreur réelle du modèle est connue | Should (V2) |
+| B23 | **Marge de négociation indicative par commune** : écart moyen entre les prix demandés en base et les prix de vente Statbel ; l'estimation n'est jamais présentée comme une valeur vénale | Should |
+
+> Pour l'investisseur, le modèle hédonique estime la **valeur en l'état** (avec l'état réel du bien) et la **valeur après travaux** (en remplaçant l'état et la classe PEB par ceux visés), ce qui alimente directement les modules C et E.
 
 #### 5.2.1 Base de données des annonces de maisons (Immoweb)
 
@@ -342,6 +399,20 @@ Indicateurs suivis : R², R² ajusté, erreur type et t de chaque coefficient, M
 | G4 | Bilan final prévu / réel par poste | Must |
 | G5 | Recalibrage des référentiels (prix travaux, marge de négociation par commune, ajustements de valeur) à partir des opérations clôturées | Could |
 
+### 5.9 Module H — Exploration de secteur, comparateur et confort
+
+| ID | Exigence | Version |
+|---|---|---|
+| H1 | **Liste des biens** filtrable et triable (commune, prix, prix/m², score, PEB, état, statut actif / retiré / vendu) | MVP |
+| H2 | **Fiche du bien** : prix, prix/m², écart au médian communal, comparables, risques, historique des prix, mini-carte, prix d'achat maximum | MVP |
+| H3 | **Écran « Données »** : import des fichiers Statbel, date de dernière mise à jour de chaque source | MVP |
+| H4 | **Vue secteur** (commune ou rayon) : nuage prix / surface avec droite de régression, distribution du prix/m², carte des biens colorés par score | V2 |
+| H5 | **Comparateur** de 2 à 4 biens côte à côte, écarts mis en évidence | V2 |
+| H6 | **Notifications** (e-mail ou Telegram) sur les baisses de prix des annonces suivies et les nouvelles opportunités (prix ≤ prix d'achat maximum) | V2 / V3 |
+| H7 | **Notes et photos de visite** rattachées au bien (en complément de la checklist D1) | V3 |
+| H8 | **Points d'intérêt** : commerces, écoles, arrêts (OpenStreetMap / Overpass) et temps de trajet en train vers Mons, Bruxelles, etc. (iRail) | V3 |
+| H9 | Export PDF ou HTML d'une fiche | V3 |
+
 ---
 
 ## 6. Paramètres fiscaux et juridiques — Wallonie (à valider par un notaire / fiscaliste)
@@ -383,7 +454,14 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | Sur-rénovation par rapport au quartier | Plafond 90e percentile (E3) | Limitation du budget travaux |
 | Estimation trop optimiste (données d'annonces) | Indice de confiance, avis d'agents | Scénario prudent obligatoire |
 | Base d'annonces incomplète (import manuel) | Taux de couverture, nombre de comparables | Tournée hebdomadaire, croisement avec Statbel, accord de données à terme |
-| Changement de structure des pages Immoweb | Tests d'extraction sur pages réelles | Bascule vers saisie assistée, mise à jour de l'extracteur |
+| Changement de structure des pages Immoweb (probabilité élevée) | Tests d'extraction sur pages réelles | Secours par texte collé + modèle de langage, saisie manuelle ; extracteur isolé |
+| Trop peu de biens pour une régression fiable (probabilité élevée) | Nombre de biens par secteur | Modèle activé seulement au-delà de 30 biens ; indicateurs simples en attendant |
+| Données d'annonce fausses ou incomplètes (ex. surface non publiée) | Écran de vérification | Validation obligatoire, détection des valeurs aberrantes, champs à demander à l'agence |
+| Biais prix demandé / prix de vente (certain) | Écart moyen par commune (B23) | Ne jamais présenter l'estimation comme une valeur vénale |
+| Services WFS wallons lents ou modifiés | Suivi des erreurs d'enrichissement | Cache local, enrichissement relançable |
+| Géocodage imprécis (adresse masquée) | Indicateur « position approximative » | Repli sur le centre de la commune, signalé |
+| Fichiers Statbel qui changent de format | Contrôle des colonnes à l'import | Script d'import isolé |
+| Projet trop ambitieux, abandonné en route | Jalons | MVP volontairement petit, livrable en quelques semaines |
 | Hausse des taux, allongement des délais | Sensibilité F9 | Durée d'opération courte |
 
 ---
@@ -402,8 +480,54 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | Performance énergétique | Certificat PEB du vendeur (n° dans l'annonce) | Classe actuelle, simulation |
 | Centimes additionnels communaux | Communes / SPF Finances | Précompte immobilier, taxe sur la plus-value |
 | Prix des travaux | Référentiel interne + devis d'entrepreneurs locaux | Chiffrage |
+| Codes NIS, codes postaux, revenus par commune | Statbel (open data, annuel) | Rattachement communal, attractivité |
+| Géocodage | Nominatim (OpenStreetMap, ≈ 1 requête/s) en complément des adresses officielles ; repli sur le centre de la commune signalé « position approximative » | Localisation |
+| Zones inondables, plan de secteur, aléas | Services WMS/WFS du géoportail wallon (test « point dans zone ») | Risques |
+| Annonces d'autres portails | Zimmo, Immovlan (pages sauvegardées) | V2 |
+| Texte d'annonce de n'importe quel site | Extraction par modèle de langage (API Claude ou Ollama en local) | Secours d'import |
+| Commerces, écoles, arrêts | Overpass (OpenStreetMap) | V3 |
+| Gares et temps de trajet | iRail (API SNCB open source) | V3 |
+
+> Statbel publie des **prix médians par bien**, pas au m² : le prix au m² du secteur est calculé par l'outil à partir des annonces en base. Toutes les sources hors annonces sont **gratuites et publiques** ; les annonces sont le point le plus fragile.
 
 **Limite majeure** : en Belgique, les prix de transaction ne sont pas publiés à l'adresse. Les comparables sont donc des **prix demandés**, corrigés de la marge de négociation et recoupés avec Statbel et les avis d'agents. Les opérations réalisées alimentent progressivement une base interne de prix réels.
+
+### 8.1 Modèle de données (SQLite)
+
+| Table | Contenu |
+|---|---|
+| `annonces` (bien) | Caractéristiques, adresse, coordonnées, code NIS, statut, source (Immoweb, Zimmo, saisie…) |
+| `historique_prix` (relevés de prix) | Un relevé daté à chaque changement de prix : le prix actuel est le dernier relevé, l'historique est gratuit |
+| `extraction_brute` | JSON ou texte d'origine, date et extracteur utilisé (ré-extraction sans réimport) |
+| `enrichissement` | Résultats WalOnMap (inondation, plan de secteur, contraintes géotechniques), géocodage, points d'intérêt ; chaque valeur garde **sa source et sa date** ; un champ vide = source indisponible, relançable plus tard |
+| `commune` | Code NIS, nom, codes postaux, médianes Statbel par type de maison et par période |
+| `indices_prix` | Indice d'évolution des prix par zone et trimestre |
+| `estimation` | Prix estimés, intervalle, résidu, score, **version du modèle** |
+| `operation` | Modèle financier, scénarios, décision, suivi de chantier (modules C à G) |
+| `secteur_suivi` (V2), `visite` (V3) | Secteurs à surveiller ; notes et photos de visite |
+
+Unités : prix en euros entiers, surfaces en m², dates ISO (AAAA-MM-JJ).
+
+### 8.2 Architecture technique
+
+La logique métier vit dans des **modules Python indépendants de l'interface** : l'interface peut être remplacée plus tard (API + application) sans toucher aux calculs ni à la base.
+
+| Brique | Technologie | Pourquoi |
+|---|---|---|
+| Langage | Python 3.12+, environnement géré avec `uv` | Écosystème données et statistiques complet |
+| Interface | Streamlit | Formulaires, tableaux, graphiques sans frontend à écrire |
+| Base | SQLite (+ SQLAlchemy) | Un fichier, zéro serveur ; passage à PostgreSQL possible |
+| Extraction | Parseurs par site (JSON intégré, JSON-LD) sur pages sauvegardées ; BeautifulSoup si nécessaire | Isolés et testés |
+| Secours d'extraction | API Claude ou modèle local (Ollama) | Champs en JSON depuis un texte collé, tous sites |
+| Géocodage | `geopy` + Nominatim, adresses officielles | Gratuit |
+| Données géographiques | Requêtes WFS wallonnes + `shapely` | Test « point dans zone » sans SIG lourd |
+| Statistiques | pandas, numpy, `statsmodels` | Régressions, intervalles, diagnostics |
+| Graphiques et carte | Plotly + `streamlit-folium` | Interactifs, intégrés à l'interface |
+| Tâches planifiées | APScheduler ou cron | Mises à jour Statbel, lecture des alertes e-mail, notifications |
+| Tests | `pytest` / `unittest` + pages HTML sauvegardées | Détecte un extracteur cassé sans réseau |
+| Déploiement | Local (Windows / Linux), puis Docker sur un serveur domestique | Même code, accessible depuis le réseau de la maison |
+
+> Implémentations déjà réalisées dans le dépôt : `base_annonces/` (base des annonces, comparables, import de page Immoweb validé sur une annonce réelle) et `travaux/` (régression sur le coût des travaux).
 
 ---
 
@@ -455,12 +579,19 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 | NF8 | Exports PDF et Excel/CSV |
 | NF9 | Interface en français ; montants en euros, format belge |
 | NF10 | Tests automatisés sur le moteur de calcul financier et fiscal (couverture ≥ 90 %) |
+| NF11 | **Performance** : import d'une annonce jusqu'à la fiche complète en < 10 s (géocodage et WFS compris) |
+| NF12 | **Robustesse** : une source en panne n'empêche pas l'enregistrement du bien ; le champ concerné reste vide, un indicateur le signale et l'enrichissement est relançable |
+| NF13 | **Traçabilité des données** : chaque valeur enrichie garde sa source et sa date ; données brutes d'extraction conservées |
+| NF14 | **Coût** : 0 € en fonctionnement normal ; modèle de langage limité au secours d'import (quelques centimes par annonce) |
+| NF15 | **Maintenance** : un extracteur par site, isolé, avec un test sur une page réelle sauvegardée |
+| NF16 | **Légal** : usage strictement personnel, pas de redistribution des annonces |
+| NF17 | **Portabilité** : fonctionne en local sous Windows et Linux, puis en conteneur Docker |
 
 ---
 
 ## 11. Livrables
 
-1. Application web (modules A à G).
+1. Application web locale (modules A à H).
 2. Moteur de calcul financier et fiscal (Wallonie) documenté et testé.
 3. Référentiel initial des prix de travaux (Hainaut) et des ratios par niveau de rénovation.
 4. Paramétrage fiscal initial (droits d'enregistrement, barème notarial, taxation des plus-values, TVA).
@@ -472,13 +603,15 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 
 ## 12. Planning indicatif
 
-| Phase | Contenu | Durée |
-|---|---|---|
-| Phase 0 | Cadrage, validation du cahier des charges et des paramètres fiscaux avec un notaire | 2 semaines |
-| Phase 1 — MVP | Import par page sauvegardée et CSV (M1, M4), base des annonces, fiche d'analyse préliminaire (A), estimation (B), travaux par régression / ratios (D), modèle financier, prix maximum et Go/No-Go (C, F) | 6 à 8 semaines |
-| Phase 2 | Scénarios et sensibilité, simulation PEB, intégration WalOnMap / BDES, exports PDF | 4 semaines |
-| Phase 3 | Marque-page d'import et copier-coller (M2, M3), liste de tournée, suivi d'opération (G), mode hors-ligne | 6 semaines |
-| Phase 4 | Démarche d'accord de données (M5), base interne de prix réels, recalibrage, extension aux appartements | En continu |
+On ne passe à la version suivante qu'une fois son jalon atteint.
+
+| Version | Contenu | Jalon | Durée |
+|---|---|---|---|
+| Phase 0 | Cadrage, validation du cahier des charges et des paramètres fiscaux avec un notaire | Cahier des charges validé | 2 semaines |
+| **MVP** | Projet `uv`, base SQLite ; codes NIS et médians Statbel ; saisie manuelle et liste des biens ; fiche avec écart au médian communal (**jalon 1**) ; extracteur Immoweb + écran de vérification ; secours par texte collé ; géocodage et couches WalOnMap ; prix/m² vs comparables ; travaux par régression / ratios ; modèle financier, prix maximum et Go/No-Go ; **20 vrais biens saisis** (**jalon 2**) | Jalons 1 et 2 | 6 à 8 semaines |
+| **V2** | Extracteurs Zimmo / Immovlan ; alertes e-mail (M6) ; suivi des annonces et historique des prix ; modèle hédonique, score ; vue secteur ; comparateur ; scénarios et sensibilité ; simulation PEB ; exports PDF ; décision sur M7 | **Jalon 3** : 30 maisons dans le secteur, erreur du modèle < 15 % | 6 semaines |
+| **V3** | Points d'intérêt et trajets ; notes et photos de visite ; notifications ; suivi d'opération complet (G) ; mode hors-ligne ; Docker | Outil utilisé pour une vraie décision | 6 semaines |
+| Continu | Accord de données (M5), base interne de prix réels, recalibrage, extension aux appartements et à toute la Wallonie | — | — |
 
 > Alternative rapide : une **version tableur** (Excel / Google Sheets) de la fiche d'analyse préliminaire et du modèle financier (§1.3, §5.3, §5.7, §9) peut être livrée en 1 semaine pour tester la méthode sur les annonces actuelles autour de Mons.
 
@@ -494,6 +627,17 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 - Aucun bien dont la plus-value nette du scénario prudent est < 30 000 € n'obtient le statut `GO`.
 - La modification d'un taux (ex. droits d'enregistrement) met à jour tous les bilans non clôturés.
 - Les exports contiennent les hypothèses, les sources et la date de l'annonce analysée.
+
+**MVP réussi si :**
+- une annonce Immoweb est importée, vérifiée et analysée en moins de 2 minutes ;
+- 9 annonces sur 10 ont leurs champs principaux (prix, surface, chambres, PEB, code postal) bien extraits ;
+- chaque fiche affiche l'écart au médian Statbel, le prix/m² vs comparables, les risques WalOnMap et le prix d'achat maximum ;
+- 20 maisons réelles sont enregistrées et analysées.
+
+**V2 réussie si :**
+- au moins 30 maisons sont suivies dans le secteur ;
+- l'erreur moyenne du modèle hédonique est inférieure à 15 % en validation croisée ;
+- une baisse de prix sur une annonce suivie est détectée sans intervention.
 
 ---
 
