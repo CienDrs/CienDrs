@@ -5,8 +5,8 @@
 | Projet | Outil d'analyse d'opérations d'achat-revente de maisons (« achat – rénovation – revente ») |
 | Zone | Belgique, Région wallonne — **rayon de 10 km autour de Mons** |
 | Type de bien (v1) | **Maisons** uniquement |
-| Point d'entrée | **Annonce Immoweb** du bien |
-| Version | 2.0 (adaptation Belgique / Wallonie) |
+| Point d'entrée | **Annonce Immoweb** du bien, **importée par l'utilisateur** (pas de collecte automatique, cf. §4.1) |
+| Version | 2.1 (acquisition des annonces par import utilisateur) |
 | Date | 07/10/2026 |
 | Statut | Proposition — à valider |
 
@@ -27,6 +27,7 @@ L'activité consiste à acheter des maisons sous-évaluées (souvent à rénover
 Spécificités belges qui pèsent fortement sur le modèle :
 - **Pas de base publique des transactions à l'adresse** (pas d'équivalent du DVF français) : l'estimation repose sur les annonces (Immoweb), les médianes communales Statbel, le baromètre des notaires et les avis de valeur.
 - **Droits d'enregistrement élevés** en Wallonie pour un achat d'investissement (12,5 % par défaut), qui réduisent fortement la marge.
+- **Les annonces Immoweb ne peuvent pas être collectées automatiquement** : l'extraction automatisée est interdite par les conditions d'utilisation du site, le site est protégé contre les robots, et l'environnement d'exécution de l'outil n'y a pas accès (vérifié : requête vers `www.immoweb.be` refusée). Un lien d'annonce seul ne suffit donc pas : c'est l'utilisateur qui importe l'annonce qu'il consulte (cf. §4.1).
 - **Une offre d'achat écrite acceptée vaut vente** : l'offre doit être émise avec des conditions suspensives et un prix déjà validé par le modèle.
 
 ### 1.2 Objectifs métier
@@ -83,7 +84,7 @@ Plus-value nette = Prix de revente
 | Acteur | Rôle |
 |---|---|
 | Investisseur / porteur de projet | Utilisateur principal : analyse, décide, fait les offres |
-| Apporteur d'affaires | Transmet des annonces Immoweb repérées |
+| Apporteur d'affaires | Transmet des annonces Immoweb repérées (page sauvegardée ou import via le marque-page, et pas seulement le lien) |
 | Entrepreneurs / architecte | Fournissent les devis, valident le chiffrage ; architecte obligatoire si permis d'urbanisme |
 | Agent immobilier | Source de biens, avis de valeur à la revente |
 | Notaire | Renseignements urbanistiques, compromis, acte authentique, calcul des droits |
@@ -95,7 +96,7 @@ Plus-value nette = Prix de revente
 ## 4. Processus cible
 
 ```
- 1. Annonce Immoweb ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
+ 1. Annonce Immoweb consultée et importée par l'utilisateur ──► 2. Analyse préliminaire (fiche 1 page) ──► 3. Visite + checklist ──► 4. Estimation affinée
                                                                                                  │
  8. Compromis → acte (≤ 4 mois) ◄── 7. Offre écrite (conditions suspensives) ◄── 6. GO/NO-GO ◄── 5. Devis travaux
         │
@@ -103,6 +104,25 @@ Plus-value nette = Prix de revente
  9. Travaux (suivi budget/planning) ──► 10. Certificats (PEB, électricité) ──► 11. Mise en vente (Immoweb)
         ──► 12. Revente ──► 13. Bilan prévu / réel (recalibre les modèles)
 ```
+
+### 4.1 Acquisition des annonces — contrainte structurante
+
+L'outil **ne télécharge jamais lui-même** les pages Immoweb. Le lien (URL) d'une annonce sert d'identifiant et permet d'ouvrir l'annonce, mais ses données doivent être **transmises par l'utilisateur** qui la consulte dans son navigateur.
+
+| Mode d'import | Description | Effort utilisateur | Priorité |
+|---|---|---|---|
+| **M1 — Page sauvegardée** | L'utilisateur enregistre la page (Ctrl+S, « HTML ») et la dépose dans l'outil ; les données sont extraites de l'objet `window.classified` de la page | ≈ 20 s par annonce | Must |
+| **M2 — Marque-page d'import** (bookmarklet) ou petite extension de navigateur | Sur la page affichée, un clic lit les données de l'annonce et les envoie à l'outil (une annonce à la fois, à l'initiative de l'utilisateur) | 1 clic | Should |
+| **M3 — Copier-coller du texte** | L'utilisateur colle le texte de l'annonce ; l'outil reconnaît prix, surfaces, chambres, PEB, kWh/m², etc. et demande les champs manquants | ≈ 1 min | Should |
+| **M4 — Saisie / import CSV** | Formulaire ou fichier (une ligne par observation datée) | Variable | Must |
+| **M5 — Accord de données** | Flux fourni par Immoweb ou un fournisseur de données immobilières sous contrat ; supprime la contrainte d'import manuel | Aucun | Could (à négocier) |
+
+**Conséquences sur l'outil :**
+- **Historique des prix et durée en ligne** : ils n'existent que pour les annonces **revues régulièrement**. L'outil produit une **liste de tournée** (annonces suivies non revues depuis 7 jours, avec leurs liens) que l'utilisateur parcourt chaque semaine en réimportant chaque page (M1/M2) ; une annonce introuvable lors de la tournée est marquée retirée.
+- **Couverture du marché** : la base ne contient que les annonces importées. L'outil affiche pour chaque estimation le **nombre de comparables** et un **taux de couverture** (annonces suivies / annonces maisons de la zone, ce dernier nombre étant relevé manuellement sur Immoweb) ; une couverture faible abaisse l'indice de confiance.
+- **Nouvelles annonces** : repérées via les **alertes e-mail Immoweb** de l'utilisateur, qui ouvre puis importe les annonces intéressantes.
+- **Robustesse** : la structure des pages Immoweb peut changer ; l'extraction est testée sur des pages réelles sauvegardées, et toute erreur d'extraction bascule vers la saisie assistée (M3/M4) au lieu de bloquer.
+- **Données personnelles** : les noms et coordonnées d'agents ou de vendeurs présents dans les pages ne sont pas conservés (RGPD).
 
 ---
 
@@ -114,14 +134,15 @@ Plus-value nette = Prix de revente
 
 | ID | Exigence | Priorité |
 |---|---|---|
-| A1 | Création d'une fiche bien à partir de l'**URL / du code Immoweb** : récupération des données de l'annonce (copier-coller assisté ou import de la page fournie par l'utilisateur) | Must |
-| A2 | Respect des conditions d'utilisation d'Immoweb : **pas d'aspiration automatisée en masse** sans accord ; à défaut, saisie assistée | Must |
+| A1 | Création d'une fiche bien par **import de l'annonce par l'utilisateur** (modes M1 à M4, §4.1) ; le lien / code Immoweb sert d'identifiant et évite les doublons | Must |
+| A2 | Aucune requête automatique vers Immoweb ; en cas d'échec d'extraction, bascule vers la saisie assistée avec les champs déjà reconnus pré-remplis | Must |
 | A3 | Contrôle de complétude : liste des champs manquants à demander à l'agence (PEB, revenu cadastral, contrôle électrique, permis…) | Must |
 | A4 | Géocodage de l'adresse et **vérification du rayon de 10 km** (si l'adresse exacte est masquée : localisation approximative signalée) | Must |
-| A5 | Historique de l'annonce : date de publication, **baisses de prix**, remises en ligne (signaux de négociation) | Should |
+| A5 | Historique de l'annonce : date de publication, **baisses de prix**, remises en ligne (signaux de négociation), à partir des réimports successifs | Should |
 | A6 | Génération automatique de la **fiche d'analyse préliminaire** (cf. ci-dessous) | Must |
 | A7 | Liste de questions et de points à vérifier lors de la visite, déduite de l'annonce | Should |
-| A8 | Alertes sur les nouvelles annonces correspondant aux critères (zone, budget, état « à rénover », PEB E/F/G) via les alertes Immoweb de l'utilisateur | Could |
+| A8 | Nouvelles annonces repérées via les **alertes e-mail Immoweb** de l'utilisateur (critères : zone, budget, état « à rénover », PEB E/F/G), puis importées | Could |
+| A9 | **Liste de tournée hebdomadaire** : annonces suivies non revues depuis 7 jours, avec liens, pour réimport | Should |
 
 **Données de l'annonce Immoweb exploitées :**
 
@@ -202,14 +223,15 @@ Pour pallier l'absence de prix de transaction publics, une **base interne** enre
 | ID | Exigence | Priorité |
 |---|---|---|
 | B9 | Enregistrement de chaque consultation d'annonce comme une **observation datée** (création ou mise à jour de l'annonce, historique du prix si changement) | Must |
-| B10 | Alimentation par **page d'annonce sauvegardée**, **import CSV** ou saisie ; pas d'aspiration automatisée sans accord d'Immoweb | Must |
-| B11 | Mise à jour du statut en ligne / retirée et de la durée en ligne | Must |
+| B10 | Alimentation exclusivement par les modes d'import utilisateur M1 à M4 (ou M5 si accord) ; aucune collecte automatique | Must |
+| B11 | Mise à jour du statut en ligne / retirée et de la durée en ligne (annonce non revue depuis 14 jours ou introuvable lors de la tournée = retirée) | Must |
 | B12 | Actualisation des prix de plus d'un an par un indice de prix régional importé | Must |
 | B13 | **Recherche de comparables** : maisons dans un rayon de 3 km, surface ± 25 %, chambres ± 1, terrain ± 50 %, même nombre de façades et même état, avec élargissement progressif (5 km, puis 10 km, puis critères assouplis) jusqu'à au moins 8 comparables | Must |
 | B14 | **Statistiques des comparables** : nombre, moyenne, médiane, minimum, maximum, quartiles du prix actualisé, du prix/m² actualisé et de la durée en ligne ; ventilation par **état** (valeur en l'état et valeur après rénovation) et par **classe PEB** | Must |
 | B15 | **Positionnement du bien ciblé** : écart à la médiane (%), percentile, valeur au prix/m² médian ; comparaison avec la médiane des comparables **sans baisse de prix** et des annonces **retirées** (les plus proches des prix réellement acceptés) | Must |
 | B16 | Signal « prix trop élevé » : une annonce dont le prix a baissé, ou qui reste en ligne plus longtemps que la médiane de ses comparables, est probablement surévaluée ; ces annonces sont signalées et pèsent moins dans l'estimation | Should |
 | B17 | Export CSV de la base et des comparables | Should |
+| B18 | Affichage du **taux de couverture** de la base et prise en compte dans l'indice de confiance | Should |
 
 ### 5.3 Module C — Prix d'achat cible et offre
 
@@ -360,6 +382,8 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 | **Citerne à mazout** | Visite, attestation | Neutralisation / enlèvement chiffrés |
 | Sur-rénovation par rapport au quartier | Plafond 90e percentile (E3) | Limitation du budget travaux |
 | Estimation trop optimiste (données d'annonces) | Indice de confiance, avis d'agents | Scénario prudent obligatoire |
+| Base d'annonces incomplète (import manuel) | Taux de couverture, nombre de comparables | Tournée hebdomadaire, croisement avec Statbel, accord de données à terme |
+| Changement de structure des pages Immoweb | Tests d'extraction sur pages réelles | Bascule vers saisie assistée, mise à jour de l'extracteur |
 | Hausse des taux, allongement des délais | Sensibilité F9 | Durée d'opération courte |
 
 ---
@@ -368,7 +392,7 @@ certificat PEB, procès-verbal de contrôle de l'installation électrique, extra
 
 | Donnée | Source | Usage |
 |---|---|---|
-| Annonce du bien, comparables, prix demandés | **Immoweb** (dans le respect de ses conditions d'utilisation) | Point d'entrée, comparables |
+| Annonce du bien, comparables, prix demandés | **Immoweb**, via import par l'utilisateur (§4.1) ; flux sous contrat en option | Point d'entrée, base des annonces, comparables |
 | Prix médians par commune et type de maison | **Statbel** (statistiques des ventes immobilières) | Référence de marché, contrôle de cohérence |
 | Tendances de prix | Baromètre des notaires (Fednot) | Actualisation |
 | Géocodage, rayon de 10 km | Adresses officielles (BeSt Address / ICAR / géoservices du SPW) | Localisation |
@@ -423,7 +447,7 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 |---|---|
 | NF1 | Application web responsive (smartphone pendant les visites : photos, checklist) |
 | NF2 | Mode hors-ligne pour la checklist de visite, synchronisation ultérieure |
-| NF3 | Fiche d'analyse préliminaire générée en < 30 secondes après saisie de l'annonce |
+| NF3 | Fiche d'analyse préliminaire générée en < 30 secondes après l'import de l'annonce ; import d'une page sauvegardée en < 5 secondes |
 | NF4 | Traçabilité : chaque estimation est historisée (version, date, hypothèses, sources, copie de l'annonce au jour de l'analyse) |
 | NF5 | Paramètres (taux, barèmes, ratios, seuils, rayon) modifiables sans développement |
 | NF6 | Sécurité : authentification, chiffrement au repos et en transit, sauvegardes quotidiennes |
@@ -451,10 +475,10 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 | Phase | Contenu | Durée |
 |---|---|---|
 | Phase 0 | Cadrage, validation du cahier des charges et des paramètres fiscaux avec un notaire | 2 semaines |
-| Phase 1 — MVP | Fiche à partir de l'annonce Immoweb (A), estimation (B), travaux par ratios (D), modèle financier, prix maximum et Go/No-Go (C, F) | 6 à 8 semaines |
+| Phase 1 — MVP | Import par page sauvegardée et CSV (M1, M4), base des annonces, fiche d'analyse préliminaire (A), estimation (B), travaux par régression / ratios (D), modèle financier, prix maximum et Go/No-Go (C, F) | 6 à 8 semaines |
 | Phase 2 | Scénarios et sensibilité, simulation PEB, intégration WalOnMap / BDES, exports PDF | 4 semaines |
-| Phase 3 | Suivi d'opération (G), mode hors-ligne, alertes | 6 semaines |
-| Phase 4 | Base interne de prix réels, recalibrage, extension aux appartements | En continu |
+| Phase 3 | Marque-page d'import et copier-coller (M2, M3), liste de tournée, suivi d'opération (G), mode hors-ligne | 6 semaines |
+| Phase 4 | Démarche d'accord de données (M5), base interne de prix réels, recalibrage, extension aux appartements | En continu |
 
 > Alternative rapide : une **version tableur** (Excel / Google Sheets) de la fiche d'analyse préliminaire et du modèle financier (§1.3, §5.3, §5.7, §9) peut être livrée en 1 semaine pour tester la méthode sur les annonces actuelles autour de Mons.
 
@@ -463,7 +487,9 @@ plus-value ≈ 277 875 − 10 887 − (160 000 + 23 000 + 69 000 + 13 500) ≈ *
 ## 13. Critères de recette
 
 - Le calcul de l'exemple §9 est reproduit à l'euro près par l'outil.
-- À partir de 10 annonces Immoweb réelles de la zone, la fiche d'analyse préliminaire est produite avec un statut et un prix maximum.
+- L'extraction est validée sur au moins **10 pages Immoweb réelles sauvegardées** de la zone (prix, surfaces, chambres, PEB, kWh/m², description, date de publication correctement reconnus) ; pour chacune, la fiche d'analyse préliminaire est produite avec un statut et un prix maximum.
+- Une page dont l'extraction échoue ouvre la saisie assistée sans perte des champs reconnus.
+- Le réimport d'une annonce dont le prix a baissé ajoute une entrée à l'historique et met à jour le nombre de baisses.
 - Un bien situé à plus de 10 km de Mons est automatiquement exclu.
 - Aucun bien dont la plus-value nette du scénario prudent est < 30 000 € n'obtient le statut `GO`.
 - La modification d'un taux (ex. droits d'enregistrement) met à jour tous les bilans non clôturés.
