@@ -1,6 +1,6 @@
 """Application d'analyse achat-rénovation-revente — V1 (MVP du cahier des charges).
 
-Lancement :  uv run streamlit run app.py
+Lancement :  poetry run streamlit run app.py   (ou : streamlit run app.py après pip install -r requirements.txt)
 """
 import json
 import os
