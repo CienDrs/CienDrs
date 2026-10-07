@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import base_annonces as ba  # noqa: E402
+from immo import annonces as ba  # noqa: E402
 
 AUJ = "2026-10-07"
 

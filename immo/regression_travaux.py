@@ -11,9 +11,9 @@ Deux niveaux de modèles (cf. cahier des charges, module D) :
    selon la gamme de finition et le bâti d'avant 1945.
 
 Usage :
-  python regression_travaux.py                       # estime les modèles, écrit le rapport
-  python regression_travaux.py --chantiers X.csv --postes Y.csv
-  python regression_travaux.py --predire surface=130 etat="À rénover" peb_avant=F \
+  python -m immo.regression_travaux                       # estime les modèles, écrit le rapport
+  python -m immo.regression_travaux --chantiers X.csv --postes Y.csv
+  python -m immo.regression_travaux --predire surface=130 etat="À rénover" peb_avant=F \
          peb_apres=C facades=3 annee=1930 gamme=standard
 
 Dépendances : numpy, pandas.
@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 ICI = Path(__file__).parent
+RACINE = ICI.parent
 PEB = ["A++", "A+", "A", "B", "C", "D", "E", "F", "G"]
 Z_80 = 1.2816  # quantile normal pour un intervalle de prédiction à 80 % (P10 – P90)
 MIN_OBS_POSTE = 15
@@ -256,9 +257,9 @@ def prediction_annonce(modele, surface, etat, peb_avant, peb_apres, facades, ann
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--chantiers", default=ICI / "data" / "chantiers_exemple.csv")
-    p.add_argument("--postes", default=ICI / "data" / "postes_exemple.csv")
-    p.add_argument("--rapport", default=ICI / "rapport_regression_travaux.md")
+    p.add_argument("--chantiers", default=RACINE / "data" / "travaux" / "chantiers_exemple.csv")
+    p.add_argument("--postes", default=RACINE / "data" / "travaux" / "postes_exemple.csv")
+    p.add_argument("--rapport", default=RACINE / "docs" / "rapport_regression_travaux.md")
     p.add_argument("--predire", nargs="+", metavar="CLE=VALEUR",
                    help="surface etat peb_avant peb_apres facades annee gamme")
     args = p.parse_args()
@@ -276,7 +277,7 @@ def main():
     ecrire_rapport(modele_annonce, modeles_postes, Path(args.chantiers).name, Path(args.rapport))
     pd.concat({"annonce": modele_annonce.tableau(),
                **{f"poste:{k}": m.tableau() for k, m in modeles_postes.items()}}) \
-        .to_csv(ICI / "coefficients_travaux.csv", index_label=["modele", "variable"])
+        .to_csv(RACINE / "data" / "travaux" / "coefficients_travaux.csv", index_label=["modele", "variable"])
     print(qualite_md(modele_annonce))
     print(f"Rapport écrit dans {args.rapport}")
 

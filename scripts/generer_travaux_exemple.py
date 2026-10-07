@@ -15,7 +15,7 @@ import pandas as pd
 
 SEED = 42
 N_CHANTIERS = 150
-DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "travaux"
 
 PEB = ["A", "B", "C", "D", "E", "F", "G"]
 ETATS = ["À rafraîchir", "À rénover", "À restaurer"]

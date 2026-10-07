@@ -11,7 +11,7 @@ import pandas as pd
 
 SEED = 7
 AUJOURDHUI = date(2026, 10, 7)
-DATA = Path(__file__).parent / "data"
+DATA = Path(__file__).resolve().parents[1] / "data"
 # commune: (latitude, longitude, prix médian indicatif €/m² d'une maison en bon état)
 COMMUNES = {
     "Mons": (50.4542, 3.9517, 1950), "Jemappes": (50.4520, 3.8870, 1550), "Cuesmes": (50.4370, 3.9220, 1500),
@@ -23,6 +23,9 @@ COMMUNES = {
 ETATS = {"Comme neuf": 1.25, "Fraîchement rénové": 1.2, "Bon": 1.0, "À rafraîchir": 0.88,
          "À rénover": 0.75, "À restaurer": 0.6}
 PEB = {"B": 130, "C": 210, "D": 300, "E": 380, "F": 470, "G": 600}
+CODES_POSTAUX = {"Mons": "7000", "Jemappes": "7012", "Cuesmes": "7033", "Quaregnon": "7390", "Frameries": "7080",
+                 "Colfontaine": "7340", "Quévy": "7040", "Jurbise": "7050", "Saint-Ghislain": "7330", "Ghlin": "7011",
+                 "Nimy": "7020", "Havré": "7021", "Hyon": "7022", "Saint-Symphorien": "7030"}
 RUES = ["Rue de la Station", "Rue du Moulin", "Rue des Écoles", "Avenue des Tilleuls", "Rue de l'Église"]
 
 
@@ -43,8 +46,8 @@ def main():
         publication = AUJOURDHUI - timedelta(days=int(rng.integers(5, 800)))
         ident = f"EX{i:04d}"
         base = dict(
-            immoweb_id=ident, url="", type_bien="maison", rue=rng.choice(RUES), numero=str(rng.integers(1, 200)),
-            code_postal="", commune=commune, latitude=round(lat0 + rng.normal(0, 0.006), 5),
+            immoweb_id=ident, source="exemple fictif", url="", type_bien="maison", rue=rng.choice(RUES), numero=str(rng.integers(1, 200)),
+            code_postal=CODES_POSTAUX[commune], commune=commune, latitude=round(lat0 + rng.normal(0, 0.006), 5),
             longitude=round(lon0 + rng.normal(0, 0.009), 5), adresse_precise=1, surface_habitable=surface,
             surface_terrain=terrain, chambres=chambres, salles_de_bain=1 + int(surface > 160), facades=facades,
             annee_construction=int(rng.choice([1900, 1925, 1950, 1970, 1990, 2005]) + rng.integers(0, 20)),

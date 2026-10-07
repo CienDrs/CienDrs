@@ -13,15 +13,15 @@ alimentée par des pages consultées et sauvegardées manuellement, des exports 
 saisie, sauf accord de données avec Immoweb.
 
 Usage (CLI) :
-  python base_annonces.py init
-  python base_annonces.py importer-csv data/annonces_exemple.csv
-  python base_annonces.py importer-page annonce.html [--date 2026-10-07]
-  python base_annonces.py importer-indices data/indices_prix_exemple.csv
-  python base_annonces.py maj-statut --jours 14
-  python base_annonces.py retirer 12345678 --date 2026-10-01
-  python base_annonces.py lister [--commune Frameries]
-  python base_annonces.py situer 12345678
-  python base_annonces.py situer --surface 130 --chambres 3 --prix 189000 --lat 50.40 --lon 3.89
+  python -m immo.annonces init
+  python -m immo.annonces importer-csv data/annonces_exemple.csv
+  python -m immo.annonces importer-page annonce.html [--date 2026-10-07]
+  python -m immo.annonces importer-indices data/indices_prix_exemple.csv
+  python -m immo.annonces maj-statut --jours 14
+  python -m immo.annonces retirer 12345678 --date 2026-10-01
+  python -m immo.annonces lister [--commune Frameries]
+  python -m immo.annonces situer 12345678
+  python -m immo.annonces situer --surface 130 --chambres 3 --prix 189000 --lat 50.40 --lon 3.89
 """
 import argparse
 import csv
@@ -35,7 +35,8 @@ from pathlib import Path
 import pandas as pd
 
 ICI = Path(__file__).parent
-BASE_PAR_DEFAUT = ICI / "data" / "annonces.sqlite"
+RACINE = ICI.parent
+BASE_PAR_DEFAUT = RACINE / "data" / "annonces.sqlite"
 GRAND_PLACE_MONS = (50.4542, 3.9517)
 RAYON_ZONE_KM = 10.0
 ZONE_INDICE = "Hainaut"
@@ -46,7 +47,7 @@ CHAMPS_ANNONCE = [
     "facades", "annee_construction", "etat", "peb_lettre", "peb_kwh_m2", "description",
     "date_publication", "titre", "province", "adresse_approximative", "revenu_cadastral", "peb_reference",
     "chauffage", "cuisine", "surface_jardin", "surface_terrasse", "nb_etages", "cave", "grenier",
-    "vendeur_type", "prix_ancien_immoweb", "nb_vues", "nb_favoris",
+    "vendeur_type", "prix_ancien_immoweb", "nb_vues", "nb_favoris", "source",
 ]
 NUMERIQUES = {"latitude", "longitude", "surface_habitable", "surface_terrain", "peb_kwh_m2", "revenu_cadastral",
               "surface_jardin", "surface_terrasse", "prix_ancien_immoweb"}
@@ -499,7 +500,7 @@ def afficher_fiche(con, immoweb_id, aujourd_hui=None):
     manquants = champs_manquants(con, immoweb_id)
     if manquants:
         print(f"\n⚠️  À demander à l'agence : {', '.join(manquants)}")
-        print(f"   puis : python base_annonces.py completer {immoweb_id} surface_habitable=… annee_construction=…")
+        print(f"   puis : python -m immo.annonces completer {immoweb_id} surface_habitable=… annee_construction=…")
 
 
 # ------------------------------------------------------------------------- CLI

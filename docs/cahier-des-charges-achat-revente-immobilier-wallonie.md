@@ -527,7 +527,7 @@ La logique métier vit dans des **modules Python indépendants de l'interface** 
 | Tests | `pytest` / `unittest` + pages HTML sauvegardées | Détecte un extracteur cassé sans réseau |
 | Déploiement | Local (Windows / Linux), puis Docker sur un serveur domestique | Même code, accessible depuis le réseau de la maison |
 
-> Implémentations déjà réalisées dans le dépôt : `base_annonces/` (base des annonces, comparables, import de page Immoweb validé sur une annonce réelle) et `travaux/` (régression sur le coût des travaux).
+> **V1 réalisée** (cf. `README.md`) : application Streamlit et paquet `immo/` couvrant le périmètre MVP — import (page Immoweb, texte collé avec API Claude, saisie) avec écran de vérification, base des annonces, médianes Statbel et rattachement communal, comparables, valeur en l'état et après travaux, pré-chiffrage des travaux, modèle financier et prix d'achat maximum, règles R1-R7, risques WalOnMap (automatiques et manuels), historique. Reste à faire pour le jalon 2 : importer les fichiers Statbel officiels et saisir 20 maisons réelles.
 
 ---
 

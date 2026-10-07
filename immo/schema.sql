@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS annonces (
     prix_ancien_immoweb REAL,                      -- ancien prix affiché par Immoweb (baisse signalée)
     nb_vues             INTEGER,
     nb_favoris          INTEGER,
+    source              TEXT,                      -- immoweb / texte / manuel / csv
     date_publication    TEXT,
     premiere_observation TEXT NOT NULL,
     derniere_observation TEXT NOT NULL,
@@ -65,3 +66,50 @@ CREATE TABLE IF NOT EXISTS indices_prix (
 
 CREATE INDEX IF NOT EXISTS idx_annonces_commune ON annonces(commune);
 CREATE INDEX IF NOT EXISTS idx_annonces_surface ON annonces(surface_habitable);
+
+-- Données enrichies (géocodage, risques WalOnMap…) : chaque valeur garde sa source et sa date
+CREATE TABLE IF NOT EXISTS enrichissement (
+    immoweb_id  TEXT NOT NULL REFERENCES annonces(immoweb_id) ON DELETE CASCADE,
+    cle         TEXT NOT NULL,
+    valeur      TEXT,                -- JSON ; NULL = source indisponible, relançable
+    source      TEXT,
+    date        TEXT NOT NULL,
+    PRIMARY KEY (immoweb_id, cle)
+);
+
+-- Communes et prix médians Statbel
+CREATE TABLE IF NOT EXISTS communes (
+    nis         TEXT PRIMARY KEY,
+    nom         TEXT NOT NULL,
+    nom_normalise TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS codes_postaux (
+    code_postal TEXT NOT NULL,
+    localite    TEXT,
+    commune     TEXT NOT NULL,         -- nom de la commune (fusionnée)
+    PRIMARY KEY (code_postal, localite)
+);
+CREATE TABLE IF NOT EXISTS medianes_statbel (
+    nis         TEXT NOT NULL,
+    annee       INTEGER NOT NULL,
+    periode     TEXT NOT NULL,         -- 'A' (année) ou 'T1'…'T4' / 'S1', 'S2'
+    type_bien   TEXT NOT NULL,         -- 'maison' (2-3 façades, 4 façades, toutes)
+    mediane     REAL NOT NULL,
+    nb_transactions INTEGER,
+    source      TEXT,
+    PRIMARY KEY (nis, annee, periode, type_bien)
+);
+
+-- Hypothèses d'opération saisies pour un bien, et analyses enregistrées (versionnées)
+CREATE TABLE IF NOT EXISTS hypotheses_operation (
+    immoweb_id  TEXT PRIMARY KEY REFERENCES annonces(immoweb_id) ON DELETE CASCADE,
+    hypotheses  TEXT NOT NULL,         -- JSON
+    date        TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS analyses (
+    immoweb_id  TEXT NOT NULL REFERENCES annonces(immoweb_id) ON DELETE CASCADE,
+    date        TEXT NOT NULL,
+    version_modele TEXT NOT NULL,
+    resultat    TEXT NOT NULL,         -- JSON : estimations, bilan, décision
+    PRIMARY KEY (immoweb_id, date, version_modele)
+);
