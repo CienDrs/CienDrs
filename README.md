@@ -6,14 +6,31 @@ Cahier des charges : [`docs/cahier-des-charges-achat-revente-immobilier-wallonie
 
 ## Démarrer
 
+Prérequis : **Python 3.11 ou plus récent**.
+
+### Avec Poetry
+
 ```bash
-uv sync                      # installe Python et les dépendances
-uv run streamlit run app.py  # ouvre l'application sur http://localhost:8501
+pip install poetry               # si Poetry n'est pas encore installé (ou : pipx install poetry)
+poetry install                   # crée l'environnement et installe les dépendances (poetry.lock)
+poetry run streamlit run app.py  # ouvre l'application sur http://localhost:8501
+poetry run pytest                # lance les tests
 ```
+
+### Avec pip (sans Poetry)
+
+```bash
+python -m venv .venv
+# Windows : .venv\Scripts\activate     Mac / Linux : source .venv/bin/activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+`requirements.txt` est généré depuis `poetry.lock` (`poetry export --only main --without-hashes -f requirements.txt -o requirements.txt`, extension `poetry-plugin-export`) ; pour les tests, ajoutez `pip install pytest`.
 
 Au premier lancement, la base est vide : page **Données** → « Charger les données d'exemple (fictives) » pour essayer l'outil, puis remplacez-les par vos données.
 
-Optionnel : `export ANTHROPIC_API_KEY=…` pour extraire les annonces collées en texte avec l'API Claude (sinon, extraction par expressions régulières).
+Optionnel : définir `ANTHROPIC_API_KEY` pour extraire les annonces collées en texte avec l'API Claude (sinon, extraction par expressions régulières).
 
 ## Ce que fait la V1
 
@@ -41,7 +58,7 @@ Optionnel : `export ANTHROPIC_API_KEY=…` pour extraire les annonces collées e
 | `immo/analyse.py` | Assemblage de la fiche, hypothèses et analyses enregistrées |
 | `immo/parametres.toml` | Tous les paramètres modifiables |
 | `data/` | Données d'exemple (**fictives**, sauf la table des codes postaux) |
-| `tests/` | Tests automatisés (`uv run pytest`), dont la page Immoweb réelle et l'exemple chiffré du cahier des charges |
+| `tests/` | Tests automatisés (`poetry run pytest`), dont la page Immoweb réelle et l'exemple chiffré du cahier des charges |
 
 ## Limites connues de la V1
 

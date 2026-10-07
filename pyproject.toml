@@ -3,21 +3,25 @@ name = "analyse-immo"
 version = "1.0.0"
 description = "Outil d'aide à la décision pour l'achat-rénovation-revente de maisons autour de Mons (Wallonie)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
-    "pandas>=2.2",
-    "numpy>=1.26",
-    "streamlit>=1.40",
-    "plotly>=5.24",
-    "anthropic>=0.70",
-    "openpyxl>=3.1.5",
+    "pandas (>=2.2,<4.0)",
+    "numpy (>=1.26,<3.0)",
+    "streamlit (>=1.40,<2.0)",
+    "plotly (>=5.24,<7.0)",
+    "anthropic (>=0.70,<2.0)",
+    "openpyxl (>=3.1,<4.0)",
 ]
 
-[dependency-groups]
-dev = ["pytest>=8"]
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-[tool.uv]
-package = false
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
