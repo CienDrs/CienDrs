@@ -390,6 +390,13 @@ def tableau_annonces(con, aujourd_hui=None, zone_indice=ZONE_INDICE) -> pd.DataF
 
 # ---------------------------------------------------------------- comparables
 
+def base_de_reference(df, bien):
+    """Annonces utilisables comme comparables : un bien réel n'est jamais comparé aux exemples fictifs."""
+    if "source" in df.columns and (bien.get("source") or "") != "exemple fictif":
+        return df[df["source"].fillna("") != "exemple fictif"]
+    return df
+
+
 def comparables(df, surface, chambres=None, surface_terrain=None, lat=None, lon=None, commune=None,
                 facades=None, etat=None, exclure_id=None, rayon_km=3.0, tolerance_surface=0.25,
                 min_resultats=8):

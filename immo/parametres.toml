@@ -114,12 +114,6 @@ nom = "WalStat / Open Data Wallonie-Bruxelles — Prix de l'immobilier résident
 type = "fichier"
 url = "https://www.odwb.be/api/explore/v2.1/catalog/datasets/234002/exports/csv?delimiter=%3B&lang=fr"
 
-[[statbel.sources]]
-nom = "Statbel — page « Prix de l'immobilier » (fichier open data le plus récent)"
-type = "page"
-url = "https://statbel.fgov.be/fr/themes/habitat/prix-de-limmobilier"
-mots_cles = ["immo", "vastgoed", "commune", "gemeente"]
-
 [risques]
 # Services ArcGIS REST du géoportail de la Wallonie (https://geoservices.wallonie.be/arcgis/rest/services),
 # interrogés au point du bien par l'opération « identify » sur toutes leurs couches.

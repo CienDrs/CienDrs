@@ -110,3 +110,13 @@ def test_collecte_dossier(base_exemple, tmp_path):
     assert set(j["source"]) == {"dossier", "api"}
     # deuxième passage : dossier vide, rien de nouveau
     assert collecte.executer(con, {**p, "collecte": {**p["collecte"], "sources": ["dossier"]}}, AUJ)[0]["vues"] == 0
+
+
+def test_bien_reel_jamais_compare_aux_exemples_fictifs(base_exemple):
+    con, _ = base_exemple
+    con.execute("UPDATE annonces SET source = 'exemple fictif' WHERE source = 'test'")
+    res = analyse.analyser(con, "21894138", P, aujourd_hui=AUJ)
+    assert not res["valeur_en_l_etat"]["disponible"] and res["reperage"]["statut"] == reperage.INSUFFISANT
+    df = annonces.tableau_annonces(con, AUJ)
+    exemple = df[df["source"] == "exemple fictif"].iloc[0].to_dict()
+    assert reperage.reperer_bien(exemple, df, P)["n_comparables"] > 0       # les exemples restent comparables entre eux

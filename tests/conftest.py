@@ -20,6 +20,8 @@ def base_exemple(tmp_path):
     chemin = tmp_path / "test.sqlite"
     con = annonces.connecter(chemin)
     annonces.importer_csv(con, RACINE / "data" / "annonces_exemple.csv")
+    # dans les tests, les annonces d'exemple servent de marché de référence (comme des annonces réelles)
+    con.execute("UPDATE annonces SET source = 'test' WHERE source = 'exemple fictif'")
     annonces.importer_indices(con, RACINE / "data" / "indices_prix_exemple.csv")
     statbel.importer_codes_postaux(con, RACINE / "data" / "codes_postaux_zone_mons.csv")
     statbel.importer_medianes(con, RACINE / "tests" / "fixtures" / "statbel_medianes_exemple.csv", source="FICTIF")

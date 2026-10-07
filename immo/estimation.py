@@ -40,7 +40,8 @@ def estimer_valeur(bien: dict, df, etat_cible=None, p=None):
         return {"disponible": False, "raison": "surface habitable inconnue"}
     etat_cible = etat_cible or bien.get("etat") or "Bon"
     coefs = pe["coef_etat"]
-    sel, criteres = annonces.comparables(df, surface, exclure_id=bien.get("immoweb_id"), **_criteres(bien))
+    sel, criteres = annonces.comparables(annonces.base_de_reference(df, bien), surface,
+                                         exclure_id=bien.get("immoweb_id"), **_criteres(bien))
     sel = sel[sel["prix_m2_actualise"].notna()]
     if sel.empty:
         return {"disponible": False, "raison": "aucun comparable", "criteres": criteres, "n": 0}

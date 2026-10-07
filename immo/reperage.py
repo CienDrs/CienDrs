@@ -35,7 +35,7 @@ def reperer_bien(bien: dict, df: pd.DataFrame, p=None, **surcharges) -> dict:
     crit = {k: (None if _nan(bien.get(c)) else bien.get(c)) for k, c in
             [("chambres", "chambres"), ("surface_terrain", "surface_terrain"), ("lat", "latitude"),
              ("lon", "longitude"), ("commune", "commune"), ("facades", "facades")]}
-    sel, criteres = annonces.comparables(df, surface, exclure_id=bien.get("immoweb_id"),
+    sel, criteres = annonces.comparables(annonces.base_de_reference(df, bien), surface, exclure_id=bien.get("immoweb_id"),
                                          rayon_km=float(r["rayon_km"]), min_resultats=int(r["min_comparables"]),
                                          **crit)
     sel = sel[sel["prix_m2_actualise"].notna()]
@@ -55,7 +55,7 @@ def reperer_tous(df: pd.DataFrame, p=None, **surcharges) -> pd.DataFrame:
     """Statut de repérage de chaque maison du tableau des annonces."""
     p = p or parametres.charger()
     utiles = ["immoweb_id", "type_bien", "prix_actuel", "surface_habitable", "prix_m2_actualise", "prix_actualise",
-              "latitude", "longitude", "commune", "chambres", "surface_terrain", "facades", "etat"]
+              "latitude", "longitude", "commune", "chambres", "surface_terrain", "facades", "etat", "source"]
     leger = df[[c for c in utiles if c in df.columns]]
     lignes = []
     for b in leger.to_dict("records"):

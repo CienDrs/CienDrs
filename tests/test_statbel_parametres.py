@@ -51,8 +51,11 @@ def test_mise_a_jour_api_odwb(con):
     assert statbel.mettre_a_jour(con, P, telecharger_fn=fake)["statut"] == "à jour" and len(urls) == 1
 
 
-def test_mise_a_jour_repli_sur_la_page_statbel(con):
+def test_mise_a_jour_repli_sur_une_page(con):
+    """Mécanisme de repli sur une page listant des fichiers open data (source configurable)."""
     P = parametres.charger()
+    P["statbel"]["sources"].append({"nom": "Statbel — page open data", "type": "page", "mots_cles": ["immo"],
+                                    "url": "https://statbel.fgov.be/fr/themes/habitat/prix-de-limmobilier"})
     zip_ = io.BytesIO()
     with zipfile.ZipFile(zip_, "w") as z:
         z.writestr("TF_IMMO_COMMUNES.txt", LONG.to_csv(index=False, sep="|"))
@@ -92,3 +95,33 @@ def test_parametres_surcharges():
     assert parametres.charger()["travaux"]["imprevus"]["renovation_lourde"] == 0.3
     parametres.reinitialiser()
     assert parametres.surcharges() == {}
+
+
+def test_format_reel_walstat_odwb(con):
+    """Colonnes réelles du jeu ODWB 234002 (relevées sur l'erreur remontée par l'utilisateur)."""
+    lignes = []
+    for ins, type_entite, entite, periode, m23, m4, mtous in [
+            ("53053", "Commune", "Mons", 2023, 195000, 330000, 210000),
+            ("53053", "Commune", "Mons", 2024, 205000, 345000, 220000),
+            ("53000", "Arrondissement", "Mons", 2024, 170000, 300000, 180000),     # ne doit pas être pris
+            ("53028", "Commune", "Frameries", 2024, 172000, None, 175000)]:
+        lignes.append({
+            "ins": ins, "type_entite": type_entite, "entite": entite, "periode": periode,
+            "prix_median_tous_logements_confondus": mtous, "prix_median_des_appartements": 160000,
+            "prix_median_des_maisons_tous_types_confondus": mtous, "prix_median_des_maisons_2_ou_3_facades": m23,
+            "prix_median_des_maisons_4_facades": m4,
+            "premier_quartile_du_prix_des_maisons_2_ou_3_facades": m23 * 0.8,
+            "troisieme_quartile_du_prix_des_maisons_2_ou_3_facades": m23 * 1.2,
+            "nombre_de_transactions_tous_logements_confondus": 500, "nombre_de_transactions_des_appartements": 80,
+            "nombre_de_transactions_des_maisons_2_ou_3_facades": 300, "nombre_de_transactions_des_maisons_4_facades": 60,
+            "type_et_entite": f"{type_entite} {entite}", "geo_shape": '{"type": "Polygon"}', "geo_point_2d": "50.45, 3.95",
+            "arrondissement": "Mons", "province": "Hainaut"})
+    df = pd.DataFrame(lignes)
+    r = statbel.mettre_a_jour(con, parametres.charger(), force=True,
+                              telecharger_fn=lambda url: (csv_bytes(df), "text/csv"))
+    assert r["statut"] == "ok", r
+    e = statbel.ecart_au_median(con, 205000, "7000", "Mons", 2)
+    assert (e["nis"], e["annee"], e["mediane"], e["nb_transactions"]) == ("53053", 2024, 205000, 300)
+    assert statbel.ecart_au_median(con, 1, "7000", "Mons", 4)["mediane"] == 345000
+    assert statbel.ecart_au_median(con, 1, "7080", "Frameries", 4)["type_bien"] == "maison"   # repli « tous types »
+    assert con.execute("SELECT COUNT(*) FROM communes WHERE nis = '53000'").fetchone()[0] == 0

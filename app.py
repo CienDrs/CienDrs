@@ -139,6 +139,10 @@ def page_base():
         rayon = d.slider("Rayon de départ des comparables (km)", 1.0, 10.0, float(r0["rayon_km"]), 0.5)
         mini = e.number_input("Comparables minimum", 1, 30, int(r0["min_comparables"]))
         reglages = {"reference": reference, "seuil": seuil, "rayon_km": rayon, "min_comparables": int(mini)}
+        st.caption("La référence est calculée pour chaque bien à partir des annonces de la base : maisons similaires "
+                   "(surface ±25 %, chambres ±1, terrain et façades comparables) dans le rayon choisi autour du bien, "
+                   "élargi à 5 puis 10 km s'il y en a trop peu, ramenées au même état que le bien. Les exemples "
+                   "fictifs ne servent jamais de référence pour un bien réel.")
         if reglages != {k: r0[k] for k in reglages} and st.button("Garder ces réglages par défaut"):
             parametres.enregistrer({"reperage": reglages})
             st.rerun()
@@ -629,8 +633,7 @@ def onglet_historique(c, res):
         fig = go.Figure(go.Scatter(x=hist["date_observation"], y=hist["prix"], mode="lines+markers", name="Prix",
                                    line=dict(color=BLEU, width=2, shape="hv"), marker=dict(size=8),
                                    hovertemplate="%{x} : %{y:,.0f} €<extra></extra>"))
-        afficher(_layout(fig, "Date", "Prix demandé (€)", 300).update_layout(showlegend=False),
-                        width="stretch")
+        afficher(_layout(fig, "Date", "Prix demandé (€)", 300).update_layout(showlegend=False))
     else:
         st.caption("Un seul prix observé : l'historique se construit à chaque réimport de l'annonce.")
     an = pd.read_sql("SELECT date, version_modele, resultat FROM analyses WHERE immoweb_id = ? ORDER BY date DESC",

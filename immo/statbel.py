@@ -127,9 +127,32 @@ def _colonnes_indicateurs_vers_large(df):
     return pd.concat(morceaux, ignore_index=True)
 
 
+def _communes_seulement(df):
+    """Les fichiers WalStat mêlent communes, arrondissements, provinces et région : on garde les communes."""
+    col = next((c for c in df.columns if _cle(c) in ("type_entite", "type_d_entite", "niveau", "type_territoire")), None)
+    if col is None:
+        return df
+    est_commune = df[col].astype(str).map(normaliser).str.contains("commune|gemeente|municipal")
+    return df[est_commune] if est_commune.any() else df
+
+
+def _annee_depuis_periode(df):
+    """Fichiers annuels où l'année est dans la colonne « période » (ex. WalStat : periode = 2024)."""
+    cles = {_cle(c) for c in df.columns}
+    if any(_cle(a) in cles for a in ALIAS["annee"]):
+        return df
+    col = next((c for c in df.columns if _cle(c) in ("periode", "period", "cd_period")), None)
+    if col is None:
+        return df
+    annees = df[col].astype(str).str.extract(r"((?:19|20)\d{2})")[0]
+    return df.assign(annee=pd.to_numeric(annees, errors="coerce")).dropna(subset=["annee"]).drop(columns=[col])
+
+
 def importer_medianes(con, chemin_ou_flux, nom=None, source="Statbel"):
     df = lire_fichier(chemin_ou_flux, nom) if not isinstance(chemin_ou_flux, pd.DataFrame) else chemin_ou_flux
     df = _format_long_vers_large(df)
+    df = _communes_seulement(df)
+    df = _annee_depuis_periode(df)
     c = _colonnes(df)
     df = df[df[c["mediane"]].notna()].copy()
     if "type_bien" in c:

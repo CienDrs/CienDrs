@@ -194,7 +194,7 @@ NO-GO  si Écart > −seuil
 « Données insuffisantes » si moins de 5 comparables ou surface habitable inconnue
 ```
 
-Les comparables sont **ramenés au même état** que le bien (coefficients d'état, B6) pour ne pas comparer une maison à rénover à des maisons rénovées. L'écart au **médian Statbel** de la commune est affiché à côté, à titre de contrôle.
+La référence n'est ni celle de la rue ni celle de la Belgique : elle est calculée **pour chaque bien** à partir des annonces de la base situées dans un rayon de 3 km (élargi à 5 puis 10 km s'il y a trop peu de biens similaires). Les annonces d'exemple fictives ne servent jamais de référence pour un bien réel. Les comparables sont **ramenés au même état** que le bien (coefficients d'état, B6) pour ne pas comparer une maison à rénover à des maisons rénovées. L'écart au **médian Statbel** de la commune est affiché à côté, à titre de contrôle.
 
 | ID | Exigence | Version |
 |---|---|---|

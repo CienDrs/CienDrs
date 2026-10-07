@@ -90,3 +90,11 @@ def test_fiche_onglets_et_travaux(app):
     import os
     c = annonces.connecter(os.environ["IMMO_BASE"])
     assert chantier.lire(c, "21894138")["lignes"]
+
+
+def test_fiche_avec_historique_de_prix(base_exemple, app):
+    con, _ = base_exemple
+    from immo import annonces
+    annonces.enregistrer_observation(con, "21894138", 215000, "2026-10-08")      # baisse de prix -> graphique
+    at = app("fiche", bien="21894138")
+    assert not at.exception, [e.value for e in at.exception]
