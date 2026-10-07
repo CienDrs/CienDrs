@@ -171,6 +171,46 @@ Valeur en l'état = Médiane €/m² des comparables de même état (corrigée d
 ```
 > Contrôle de cohérence : la valeur est comparée à la médiane Statbel de la commune ; un écart > 30 % déclenche une alerte.
 
+#### 5.2.1 Base de données des annonces de maisons (Immoweb)
+
+Pour pallier l'absence de prix de transaction publics, une **base interne** enregistre dans le temps toutes les annonces de maisons à vendre de la zone. Implémentation de référence : [`base_annonces/`](../base_annonces/README.md) (SQLite + Python).
+
+**Données enregistrées par annonce :**
+
+| Donnée | Détail |
+|---|---|
+| Identifiant et lien | Code Immoweb, URL |
+| Adresse | Rue, numéro, code postal, commune, coordonnées, indicateur « adresse exacte publiée », distance à Mons |
+| Caractéristiques | Surface habitable, surface du terrain, chambres, salles de bain, façades, année de construction, état du bâtiment |
+| PEB | Lettre (A++ à G) et consommation (kWh/m²/an) |
+| Description | Texte de l'annonce |
+| Dates | Date de publication, première et dernière observation, date de retrait |
+| **Historique des prix** | Une ligne à chaque changement du prix demandé (date, prix) |
+
+**Indicateurs calculés :**
+
+| Indicateur | Calcul |
+|---|---|
+| Prix actuel, prix initial | Dernier et premier prix de l'historique |
+| Nombre de baisses, variation totale (%) | À partir de l'historique des prix |
+| En ligne / retirée | Retirée si marquée comme telle ou non revue depuis 14 jours (paramétrable) |
+| Durée en ligne (jours) | (date de retrait ou aujourd'hui) − date de publication |
+| Prix/m² | Prix actuel / surface habitable |
+| **Prix actualisé** | Si le prix a été observé pour la dernière fois **il y a un an ou plus** : prix × indice actuel / indice du trimestre de cette observation (indice des prix des maisons, Statbel, par province ou arrondissement). Une annonce toujours en ligne n'est pas actualisée : son prix est déjà un prix actuel, même si elle a été publiée il y a plus d'un an |
+| Prix/m² actualisé | Prix actualisé / surface habitable |
+
+| ID | Exigence | Priorité |
+|---|---|---|
+| B9 | Enregistrement de chaque consultation d'annonce comme une **observation datée** (création ou mise à jour de l'annonce, historique du prix si changement) | Must |
+| B10 | Alimentation par **page d'annonce sauvegardée**, **import CSV** ou saisie ; pas d'aspiration automatisée sans accord d'Immoweb | Must |
+| B11 | Mise à jour du statut en ligne / retirée et de la durée en ligne | Must |
+| B12 | Actualisation des prix de plus d'un an par un indice de prix régional importé | Must |
+| B13 | **Recherche de comparables** : maisons dans un rayon de 3 km, surface ± 25 %, chambres ± 1, terrain ± 50 %, même nombre de façades et même état, avec élargissement progressif (5 km, puis 10 km, puis critères assouplis) jusqu'à au moins 8 comparables | Must |
+| B14 | **Statistiques des comparables** : nombre, moyenne, médiane, minimum, maximum, quartiles du prix actualisé, du prix/m² actualisé et de la durée en ligne ; ventilation par **état** (valeur en l'état et valeur après rénovation) et par **classe PEB** | Must |
+| B15 | **Positionnement du bien ciblé** : écart à la médiane (%), percentile, valeur au prix/m² médian ; comparaison avec la médiane des comparables **sans baisse de prix** et des annonces **retirées** (les plus proches des prix réellement acceptés) | Must |
+| B16 | Signal « prix trop élevé » : une annonce dont le prix a baissé, ou qui reste en ligne plus longtemps que la médiane de ses comparables, est probablement surévaluée ; ces annonces sont signalées et pèsent moins dans l'estimation | Should |
+| B17 | Export CSV de la base et des comparables | Should |
+
 ### 5.3 Module C — Prix d'achat cible et offre
 
 | ID | Exigence | Priorité |
